@@ -33,8 +33,6 @@
         canvas {
             display: block;
             image-rendering: pixelated;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: crisp-edges;
         }
         .ui-overlay {
             position: absolute;
@@ -134,14 +132,6 @@
         .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
         .down { grid-column: 2; grid-row: 3; }
-        .chain-info {
-            background: rgba(0, 82, 255, 0.2);
-            border: 1px solid #0052FF;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 8px 0;
-            font-size: 12px;
-        }
 
         @media (max-width: 768px) {
             .mobile-controls {
@@ -165,147 +155,60 @@
                 LIVES: <span id="lives">3</span> |
                 HIGH: <span id="highScore">0</span>
             </div>
-            <div class="controls">
-                <div class="mobile-controls">
-                    <button class="up" onclick="moveUp()">↑</button>
-                    <button class="left" onclick="moveLeft()">←</button>
-                    <button class="right" onclick="moveRight()">→</button>
-                    <button class="down" onclick="moveDown()">↓</button>
-                </div>
-            </div>
         </div>
         
         <div id="gameStart" class="game-start">
             <h2>🟦 BASE-MAN 👑</h2>
             <p class="instructions">
-                ARROW KEYS to move Base-Man<br>
-                Collect <span style="color: #00D1FF">TX Orbs</span> • Avoid Chain Ghosts<br>
+                ARROW KEYS to move Base-Man (FAST!)<br>
+                Collect TX Orbs • Avoid Chain Ghosts<br>
                 Power Pellets = Bridge Mode
             </p>
-            <div class="chain-info">
-                <strong>Chain Ghosts:</strong><br>
-                👻 ETH (Aggressive) | 👻 SOL (Ambusher)<br>
-                👻 ARB (Flanker) | 👻 OP (Shy)
-            </div>
-            <button id="startButton">START BUILDING</button>
+            <button id="startButton">START GAME</button>
         </div>
         
         <div id="gameOver" class="game-over hidden">
             <h2>GAME OVER</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
-            <button id="restartButton">BUILD AGAIN</button>
-            <button id="shareButton">SHARE ONCHAIN</button>
+            <button id="restartButton">PLAY AGAIN</button>
         </div>
     </div>
 
     <script>
-        // Game constants
+        // ========== HIGH PERFORMANCE CONFIG ==========
         const TILE_SIZE = 20;
         const CANVAS_WIDTH = 560;
         const CANVAS_HEIGHT = 620;
-        const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
-        const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
-
-        // Game variables
+        
+        // SPEED SETTINGS - MUCH FASTER
+        const PACMAN_SPEED = 4; // 2x faster
+        const GHOST_SPEED = 2.5; // 2.5x faster
+        const ANIMATION_SPEED = 0.2; // Faster animations
+        
+        // Game state
         let canvas, ctx;
         let gameActive = false;
         let score = 0;
         let lives = 3;
         let highScore = localStorage.getItem('basemanHighScore') || 0;
-        let pacman = { x: 0, y: 0, direction: 'right', nextDirection: 'right', speed: 2, mouthOpen: 0, mouthSpeed: 0.1 };
+        let pacman = { 
+            x: 0, y: 0, 
+            direction: 'right', 
+            nextDirection: 'right', 
+            speed: PACMAN_SPEED, 
+            mouthOpen: 0 
+        };
         let ghosts = [];
         let dots = [];
         let powerPellets = [];
         let walls = [];
         let animationId;
+        let lastTime = 0;
         let powerMode = false;
         let powerModeTimer = 0;
-        const POWER_MODE_DURATION = 5000;
+        const POWER_MODE_DURATION = 3000; // Shorter power mode
 
-        // Create simple pixel art programmatically (no external images needed)
-        function createBaseManSprite() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-            
-            // Base blue circle
-            ctx.fillStyle = '#0052FF';
-            ctx.beginPath();
-            ctx.arc(16, 16, 14, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // White inner circle
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(16, 16, 10, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Base triangle
-            ctx.fillStyle = '#0052FF';
-            ctx.beginPath();
-            ctx.moveTo(16, 8);
-            ctx.lineTo(22, 18);
-            ctx.lineTo(10, 18);
-            ctx.closePath();
-            ctx.fill();
-            
-            return canvas;
-        }
-
-        function createGhostSprite(color, symbol) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-            
-            // Ghost body
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(16, 12, 10, Math.PI, 0, false); // Top semi-circle
-            ctx.lineTo(26, 22);
-            ctx.lineTo(22, 26);
-            ctx.lineTo(18, 22);
-            ctx.lineTo(14, 26);
-            ctx.lineTo(10, 22);
-            ctx.lineTo(6, 26);
-            ctx.lineTo(6, 22);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Eyes
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(12, 10, 3, 0, Math.PI * 2);
-            ctx.arc(20, 10, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#0000FF';
-            ctx.beginPath();
-            ctx.arc(12, 10, 1.5, 0, Math.PI * 2);
-            ctx.arc(20, 10, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Chain symbol
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 12px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(symbol, 16, 25);
-            
-            return canvas;
-        }
-
-        // Create sprites
-        const sprites = {
-            baseMan: createBaseManSprite(),
-            ethGhost: createGhostSprite('#FF4444', 'Ξ'),
-            solGhost: createGhostSprite('#00FF88', '◎'),
-            arbGhost: createGhostSprite('#00D1FF', '⟠'),
-            opGhost: createGhostSprite('#FFAA00', '⚌')
-        };
-
-        // Maze layout (1 = wall, 0 = path, 2 = power pellet)
+        // ========== OPTIMIZED MAZE ==========
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -317,16 +220,16 @@
             [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // More open space
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], // Open tunnel
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
@@ -334,369 +237,238 @@
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
             [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        // DOM elements
-        const scoreElement = document.getElementById('score');
-        const livesElement = document.getElementById('lives');
-        const highScoreElement = document.getElementById('highScore');
-        const finalScoreElement = document.getElementById('finalScore');
-        const gameStartElement = document.getElementById('gameStart');
-        const gameOverElement = document.getElementById('gameOver');
-        const startButton = document.getElementById('startButton');
-        const restartButton = document.getElementById('restartButton');
-        const shareButton = document.getElementById('shareButton');
-
-        // Chain ghosts data
-        const chainGhosts = [
-            { name: 'ETH', color: '#FF4444', speed: 1.2, personality: 'chaser' },
-            { name: 'SOL', color: '#00FF88', speed: 1.1, personality: 'ambusher' },
-            { name: 'ARB', color: '#00D1FF', speed: 1.0, personality: 'flanker' },
-            { name: 'OP', color: '#FFAA00', speed: 0.9, personality: 'shy' }
-        ];
-
-        // === DRAWING FUNCTIONS ===
+        // ========== OPTIMIZED DRAWING ==========
         function drawHex(x, y) {
-            ctx.save();
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#00D1FF';
+            ctx.fillStyle = '#0052FF';
+            ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
             
-            // Hexagon path
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = (Math.PI / 3) * i;
-                const hexX = x + 10 + 8 * Math.cos(angle);
-                const hexY = y + 10 + 8 * Math.sin(angle);
-                if (i === 0) ctx.moveTo(hexX, hexY);
-                else ctx.lineTo(hexX, hexY);
-            }
-            ctx.closePath();
-            
-            // Gradient fill
-            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 8);
-            gradient.addColorStop(0, '#0052FF');
-            gradient.addColorStop(1, '#0030A0');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            
-            // Neon stroke
+            // Simple glow effect
             ctx.strokeStyle = '#00D1FF';
             ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
+            ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
         }
 
         function drawTXOrb(x, y) {
-            ctx.save();
-            const pulse = Math.sin(Date.now() * 0.01) * 2;
-            
-            ctx.shadowBlur = 8 + pulse;
-            ctx.shadowColor = '#00D1FF';
-            
-            // Pulsing orb
+            ctx.fillStyle = '#00D1FF';
             ctx.beginPath();
-            ctx.arc(x + 10, y + 10, 2 + pulse * 0.3, 0, Math.PI * 2);
-            
-            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 3);
-            gradient.addColorStop(0, '#FFFFFF');
-            gradient.addColorStop(0.7, '#00D1FF');
-            gradient.addColorStop(1, '#0052FF');
-            ctx.fillStyle = gradient;
+            ctx.arc(x + 10, y + 10, 3, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore();
         }
 
         function drawPowerHex(x, y) {
-            ctx.save();
-            const pulse = Math.sin(Date.now() * 0.008) * 2;
-            
-            ctx.shadowBlur = 12 + pulse;
-            ctx.shadowColor = '#00D1FF';
-            
-            // Large hexagon
+            ctx.fillStyle = '#00D1FF';
             ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = (Math.PI / 3) * i;
-                const hexX = x + 10 + (5 + pulse) * Math.cos(angle);
-                const hexY = y + 10 + (5 + pulse) * Math.sin(angle);
-                if (i === 0) ctx.moveTo(hexX, hexY);
-                else ctx.lineTo(hexX, hexY);
-            }
-            ctx.closePath();
-            
-            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 6);
-            gradient.addColorStop(0, '#FFFFFF');
-            gradient.addColorStop(0.5, '#00D1FF');
-            gradient.addColorStop(1, '#0052FF');
-            ctx.fillStyle = gradient;
+            ctx.arc(x + 10, y + 10, 6, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore();
         }
 
         function drawBaseMan(x, y, dir, mouthOpen) {
-            ctx.save();
-            ctx.translate(x + 10, y + 10);
-            
-            // Rotate based on direction
-            let rotation = 0;
-            switch(dir) {
-                case 'up': rotation = -Math.PI / 2; break;
-                case 'down': rotation = Math.PI / 2; break;
-                case 'left': rotation = Math.PI; break;
-                case 'right': rotation = 0; break;
-            }
-            ctx.rotate(rotation);
-            
-            // Base logo body with glow
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#00D1FF';
-            ctx.drawImage(sprites.baseMan, -10, -10, 20, 20);
-            
-            // Animated mouth (black pie slice)
-            const mouthAngle = 0.2 + mouthOpen * 0.6; // 0.2 to 0.8 radians
-            ctx.fillStyle = '#0A0B0D';
+            // Base blue circle
+            ctx.fillStyle = '#0052FF';
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.arc(0, 0, 8, mouthAngle, Math.PI * 2 - mouthAngle);
-            ctx.closePath();
+            ctx.arc(x + 10, y + 10, 8, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.restore();
+            // Mouth animation
+            let startAngle, endAngle;
+            switch(dir) {
+                case 'right':
+                    startAngle = 0.2 + mouthOpen * 0.6;
+                    endAngle = Math.PI * 2 - (0.2 + mouthOpen * 0.6);
+                    break;
+                case 'left':
+                    startAngle = Math.PI + 0.2 + mouthOpen * 0.6;
+                    endAngle = Math.PI - (0.2 + mouthOpen * 0.6);
+                    break;
+                case 'up':
+                    startAngle = -Math.PI/2 + 0.2 + mouthOpen * 0.6;
+                    endAngle = Math.PI * 3/2 - (0.2 + mouthOpen * 0.6);
+                    break;
+                case 'down':
+                    startAngle = Math.PI/2 + 0.2 + mouthOpen * 0.6;
+                    endAngle = Math.PI * 5/2 - (0.2 + mouthOpen * 0.6);
+                    break;
+            }
+            
+            // Mouth
+            ctx.fillStyle = '#0A0B0D';
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 10);
+            ctx.arc(x + 10, y + 10, 8, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fill();
         }
 
         function drawGhost(x, y, index, scared) {
-            const ghostSprites = [sprites.ethGhost, sprites.solGhost, sprites.arbGhost, sprites.opGhost];
+            const colors = ['#FF4444', '#00FF88', '#00D1FF', '#FFAA00'];
+            const symbols = ['Ξ', '◎', '⟠', '⚌'];
             
-            ctx.save();
+            ctx.fillStyle = scared ? '#0052FF' : colors[index];
             
-            if (scared) {
-                // Blue scared mode
-                ctx.filter = 'hue-rotate(200deg) brightness(1.5)';
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = '#0052FF';
-            } else {
-                // Normal mode with chain-specific glow
-                const ghostColors = ['#FF4444', '#00FF88', '#00D1FF', '#FFAA00'];
-                ctx.shadowBlur = 6;
-                ctx.shadowColor = ghostColors[index];
-            }
+            // Ghost body (simplified)
+            ctx.beginPath();
+            ctx.arc(x + 10, y + 8, 7, Math.PI, 0, false);
+            ctx.lineTo(x + 17, y + 15);
+            ctx.lineTo(x + 13, y + 18);
+            ctx.lineTo(x + 10, y + 15);
+            ctx.lineTo(x + 7, y + 18);
+            ctx.lineTo(x + 3, y + 15);
+            ctx.closePath();
+            ctx.fill();
             
-            // Draw ghost sprite
-            ctx.drawImage(ghostSprites[index], x, y, 20, 20);
+            // Eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + 7, y + 7, 2, 0, Math.PI * 2);
+            ctx.arc(x + 13, y + 7, 2, 0, Math.PI * 2);
+            ctx.fill();
             
-            ctx.restore();
+            // Symbol
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(symbols[index], x + 10, y + 14);
         }
 
-        // Initialize game
+        // ========== OPTIMIZED GAME LOGIC ==========
         function init() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
             
-            // Set high score display
-            highScoreElement.textContent = highScore;
-            
-            // Add event listeners
+            document.getElementById('highScore').textContent = highScore;
             setupEventListeners();
-            
-            // Initialize game state
             resetGame();
         }
 
-        // Set up event listeners
         function setupEventListeners() {
-            // Keyboard controls
             document.addEventListener('keydown', handleKeyPress);
-            
-            // Game control buttons
-            startButton.addEventListener('click', startGame);
-            restartButton.addEventListener('click', startGame);
-            shareButton.addEventListener('click', shareScore);
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('restartButton').addEventListener('click', startGame);
         }
 
-        // Handle keyboard input
         function handleKeyPress(e) {
             if (!gameActive) return;
-            
             switch(e.key) {
-                case 'ArrowUp':
-                    pacman.nextDirection = 'up';
-                    break;
-                case 'ArrowDown':
-                    pacman.nextDirection = 'down';
-                    break;
-                case 'ArrowLeft':
-                    pacman.nextDirection = 'left';
-                    break;
-                case 'ArrowRight':
-                    pacman.nextDirection = 'right';
-                    break;
+                case 'ArrowUp': pacman.nextDirection = 'up'; break;
+                case 'ArrowDown': pacman.nextDirection = 'down'; break;
+                case 'ArrowLeft': pacman.nextDirection = 'left'; break;
+                case 'ArrowRight': pacman.nextDirection = 'right'; break;
             }
         }
 
-        // Mobile controls
-        function moveUp() { if (gameActive) pacman.nextDirection = 'up'; }
-        function moveDown() { if (gameActive) pacman.nextDirection = 'down'; }
-        function moveLeft() { if (gameActive) pacman.nextDirection = 'left'; }
-        function moveRight() { if (gameActive) pacman.nextDirection = 'right'; }
-
-        // Start the game
         function startGame() {
             gameActive = true;
             resetGame();
-            gameStartElement.classList.add('hidden');
-            gameOverElement.classList.add('hidden');
+            document.getElementById('gameStart').classList.add('hidden');
+            document.getElementById('gameOver').classList.add('hidden');
             
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
+            if (animationId) cancelAnimationFrame(animationId);
+            lastTime = performance.now();
             gameLoop();
         }
 
-        // Reset game state
         function resetGame() {
             score = 0;
             lives = 3;
             powerMode = false;
-            powerModeTimer = 0;
             
-            // Initialize dots and power pellets
             dots = [];
             powerPellets = [];
             walls = [];
             
+            // Precompute maze objects for performance
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
-                    if (maze[y][x] === 0) {
-                        dots.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
-                    } else if (maze[y][x] === 2) {
-                        powerPellets.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
-                    } else if (maze[y][x] === 1) {
-                        walls.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
-                    }
+                    if (maze[y][x] === 0) dots.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
+                    else if (maze[y][x] === 2) powerPellets.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
+                    else if (maze[y][x] === 1) walls.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
                 }
             }
             
-            // Initialize BaseMan
             pacman.x = 14 * TILE_SIZE;
             pacman.y = 23 * TILE_SIZE;
             pacman.direction = 'right';
             pacman.nextDirection = 'right';
             pacman.mouthOpen = 0;
             
-            // Initialize chain ghosts
             ghosts = [
-                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', ...chainGhosts[0] },
-                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', ...chainGhosts[1] },
-                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', ...chainGhosts[2] },
-                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', ...chainGhosts[3] }
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED },
+                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', speed: GHOST_SPEED },
+                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', speed: GHOST_SPEED },
+                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED }
             ];
             
-            // Update UI
-            scoreElement.textContent = score;
-            livesElement.textContent = lives;
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
         }
 
-        // Game loop
-        function gameLoop() {
+        function gameLoop(currentTime) {
             if (!gameActive) return;
             
-            // Clear canvas
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            // Clear canvas efficiently
             ctx.fillStyle = '#0A0B0D';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw walls
-            walls.forEach(wall => {
-                drawHex(wall.x, wall.y);
-            });
+            // Draw static elements
+            walls.forEach(wall => drawHex(wall.x, wall.y));
+            dots.forEach(dot => drawTXOrb(dot.x, dot.y));
+            powerPellets.forEach(pellet => drawPowerHex(pellet.x, pellet.y));
             
-            // Draw dots
-            dots.forEach(dot => {
-                drawTXOrb(dot.x, dot.y);
-            });
-            
-            // Draw power pellets
-            powerPellets.forEach(pellet => {
-                drawPowerHex(pellet.x, pellet.y);
-            });
-            
-            // Update and draw BaseMan
-            updatePacman();
-            
-            // Update and draw ghosts
-            updateGhosts();
-            
-            // Check collisions
+            // Update game state
+            updatePacman(deltaTime);
+            updateGhosts(deltaTime);
             checkCollisions();
             
-            // Update power mode
             if (powerMode) {
-                powerModeTimer--;
-                if (powerModeTimer <= 0) {
-                    powerMode = false;
-                }
+                powerModeTimer -= deltaTime;
+                if (powerModeTimer <= 0) powerMode = false;
             }
             
-            // Check win condition
             if (dots.length === 0 && powerPellets.length === 0) {
                 levelComplete();
                 return;
             }
             
-            // Continue game loop
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // Update BaseMan position and animation
-        function updatePacman() {
-            // Animate mouth
-            pacman.mouthOpen += pacman.mouthSpeed;
-            if (pacman.mouthOpen > 1 || pacman.mouthOpen < 0) {
-                pacman.mouthSpeed *= -1;
-            }
+        function updatePacman(deltaTime) {
+            // Faster mouth animation
+            pacman.mouthOpen = (pacman.mouthOpen + ANIMATION_SPEED * deltaTime * 0.06) % 1;
             
-            // Try to change direction
             if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
                 pacman.direction = pacman.nextDirection;
             }
             
-            // Move in current direction if possible
             if (canMove(pacman.x, pacman.y, pacman.direction)) {
+                const moveDist = pacman.speed * (deltaTime * 0.06); // Frame-rate independent
                 switch(pacman.direction) {
-                    case 'up':
-                        pacman.y -= pacman.speed;
-                        break;
-                    case 'down':
-                        pacman.y += pacman.speed;
-                        break;
-                    case 'left':
-                        pacman.x -= pacman.speed;
-                        break;
-                    case 'right':
-                        pacman.x += pacman.speed;
-                        break;
+                    case 'up': pacman.y -= moveDist; break;
+                    case 'down': pacman.y += moveDist; break;
+                    case 'left': pacman.x -= moveDist; break;
+                    case 'right': pacman.x += moveDist; break;
                 }
             }
             
-            // Handle tunnel wrapping
-            if (pacman.x < -TILE_SIZE) {
-                pacman.x = CANVAS_WIDTH;
-            } else if (pacman.x > CANVAS_WIDTH) {
-                pacman.x = -TILE_SIZE;
-            }
+            // Tunnel wrapping
+            if (pacman.x < -TILE_SIZE) pacman.x = CANVAS_WIDTH;
+            else if (pacman.x > CANVAS_WIDTH) pacman.x = -TILE_SIZE;
             
-            // Draw BaseMan
             drawBaseMan(pacman.x, pacman.y, pacman.direction, pacman.mouthOpen);
         }
 
-        // Update ghost positions and AI
-        function updateGhosts() {
+        function updateGhosts(deltaTime) {
             ghosts.forEach((ghost, index) => {
-                // Simple ghost AI
-                if (Math.random() < 0.02 || !canMove(ghost.x, ghost.y, ghost.direction)) {
+                if (Math.random() < 0.01 || !canMove(ghost.x, ghost.y, ghost.direction)) {
                     const directions = ['up', 'down', 'left', 'right'];
                     const validDirections = directions.filter(dir => canMove(ghost.x, ghost.y, dir));
                     if (validDirections.length > 0) {
@@ -704,96 +476,75 @@
                     }
                 }
                 
-                // Move ghost
                 if (canMove(ghost.x, ghost.y, ghost.direction)) {
-                    const speed = powerMode ? ghost.speed * 0.5 : ghost.speed;
+                    const speed = powerMode ? ghost.speed * 0.7 : ghost.speed;
+                    const moveDist = speed * (deltaTime * 0.06);
                     switch(ghost.direction) {
-                        case 'up': ghost.y -= speed; break;
-                        case 'down': ghost.y += speed; break;
-                        case 'left': ghost.x -= speed; break;
-                        case 'right': ghost.x += speed; break;
+                        case 'up': ghost.y -= moveDist; break;
+                        case 'down': ghost.y += moveDist; break;
+                        case 'left': ghost.x -= moveDist; break;
+                        case 'right': ghost.x += moveDist; break;
                     }
                 }
                 
-                // Handle tunnel wrapping
-                if (ghost.x < -TILE_SIZE) {
-                    ghost.x = CANVAS_WIDTH;
-                } else if (ghost.x > CANVAS_WIDTH) {
-                    ghost.x = -TILE_SIZE;
-                }
+                if (ghost.x < -TILE_SIZE) ghost.x = CANVAS_WIDTH;
+                else if (ghost.x > CANVAS_WIDTH) ghost.x = -TILE_SIZE;
                 
-                // Draw ghost
                 drawGhost(ghost.x, ghost.y, index, powerMode);
             });
         }
 
-        // Check if movement is possible
         function canMove(x, y, direction) {
-            let newX = x;
-            let newY = y;
+            let testX = x, testY = y;
+            const buffer = 2; // Smaller collision buffer for faster movement
             
             switch(direction) {
-                case 'up': newY -= TILE_SIZE / 2; break;
-                case 'down': newY += TILE_SIZE / 2; break;
-                case 'left': newX -= TILE_SIZE / 2; break;
-                case 'right': newX += TILE_SIZE / 2; break;
+                case 'up': testY -= buffer; break;
+                case 'down': testY += TILE_SIZE - buffer; break;
+                case 'left': testX -= buffer; break;
+                case 'right': testX += TILE_SIZE - buffer; break;
             }
             
-            // Convert to grid coordinates
-            const gridX = Math.floor(newX / TILE_SIZE);
-            const gridY = Math.floor(newY / TILE_SIZE);
+            const gridX = Math.floor(testX / TILE_SIZE);
+            const gridY = Math.floor(testY / TILE_SIZE);
             
-            // Check if within bounds and not a wall
-            return gridX >= 0 && gridX < GRID_WIDTH && 
-                   gridY >= 0 && gridY < GRID_HEIGHT &&
-                   maze[gridY][gridX] !== 1;
+            return gridX >= 0 && gridX < 28 && gridY >= 0 && gridY < 31 && maze[gridY][gridX] !== 1;
         }
 
-        // Check for collisions
         function checkCollisions() {
-            // Check dot collisions
+            // Optimized collision checking
             for (let i = dots.length - 1; i >= 0; i--) {
                 const dot = dots[i];
-                const distance = Math.sqrt((pacman.x - dot.x) ** 2 + (pacman.y - dot.y) ** 2);
-                if (distance < 10) {
+                if (Math.abs(pacman.x - dot.x) < 12 && Math.abs(pacman.y - dot.y) < 12) {
                     dots.splice(i, 1);
                     score += 10;
-                    scoreElement.textContent = score;
+                    document.getElementById('score').textContent = score;
                 }
             }
             
-            // Check power pellet collisions
             for (let i = powerPellets.length - 1; i >= 0; i--) {
                 const pellet = powerPellets[i];
-                const distance = Math.sqrt((pacman.x - pellet.x) ** 2 + (pacman.y - pellet.y) ** 2);
-                if (distance < 12) {
+                if (Math.abs(pacman.x - pellet.x) < 15 && Math.abs(pacman.y - pellet.y) < 15) {
                     powerPellets.splice(i, 1);
                     score += 50;
-                    scoreElement.textContent = score;
+                    document.getElementById('score').textContent = score;
                     powerMode = true;
                     powerModeTimer = POWER_MODE_DURATION;
                 }
             }
             
-            // Check ghost collisions
             ghosts.forEach(ghost => {
-                const distance = Math.sqrt((pacman.x - ghost.x) ** 2 + (pacman.y - ghost.y) ** 2);
-                if (distance < 12) {
+                if (Math.abs(pacman.x - ghost.x) < 15 && Math.abs(pacman.y - ghost.y) < 15) {
                     if (powerMode) {
-                        // Eat ghost
                         ghost.x = 13 * TILE_SIZE;
                         ghost.y = 11 * TILE_SIZE;
                         score += 200;
-                        scoreElement.textContent = score;
+                        document.getElementById('score').textContent = score;
                     } else {
-                        // Lose life
                         lives--;
-                        livesElement.textContent = lives;
-                        
-                        if (lives <= 0) {
-                            gameOver();
-                        } else {
-                            // Reset positions
+                        document.getElementById('lives').textContent = lives;
+                        if (lives <= 0) gameOver();
+                        else {
                             pacman.x = 14 * TILE_SIZE;
                             pacman.y = 23 * TILE_SIZE;
                             pacman.direction = 'right';
@@ -804,49 +555,25 @@
             });
         }
 
-        // Level complete
         function levelComplete() {
             score += 1000;
-            scoreElement.textContent = score;
-            
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('basemanHighScore', highScore);
-                highScoreElement.textContent = highScore;
-            }
-            
-            finalScoreElement.textContent = score;
-            gameOverElement.querySelector('h2').textContent = 'LEVEL COMPLETE!';
-            gameOverElement.classList.remove('hidden');
-            gameActive = false;
+            gameOver(true);
         }
 
-        // Game over
-        function gameOver() {
+        function gameOver(win = false) {
             gameActive = false;
-            
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('basemanHighScore', highScore);
-                highScoreElement.textContent = highScore;
+                document.getElementById('highScore').textContent = highScore;
             }
-            
-            finalScoreElement.textContent = score;
-            gameOverElement.querySelector('h2').textContent = 'GAME OVER';
-            gameOverElement.classList.remove('hidden');
-            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').querySelector('h2').textContent = 
+                win ? 'LEVEL COMPLETE!' : 'GAME OVER';
+            document.getElementById('gameOver').classList.remove('hidden');
             cancelAnimationFrame(animationId);
         }
 
-        // Share score
-        function shareScore() {
-            const text = `I just scored ${score} on 🟦 Base-Man 👑! Can you beat my score? \n\nPlay now:`;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Score copied to clipboard! Share it on Warpcast or Twitter.");
-            });
-        }
-
-        // Initialize the game when page loads
         window.addEventListener('load', init);
     </script>
 </body>
