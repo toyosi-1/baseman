@@ -109,34 +109,8 @@
             border: 1px solid #0052FF;
             font-size: 14px;
         }
-        .mobile-controls {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-            width: 180px;
-            height: 180px;
-        }
-        .mobile-controls button {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 82, 255, 0.7);
-        }
-        .up { grid-column: 2; grid-row: 1; }
-        .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-        .down { grid-column: 2; grid-row: 3; }
 
         @media (max-width: 768px) {
-            .mobile-controls {
-                display: grid;
-            }
             h1 {
                 font-size: 28px;
             }
@@ -160,9 +134,9 @@
         <div id="gameStart" class="game-start">
             <h2>🟦 BASE-MAN 👑</h2>
             <p class="instructions">
-                ARROW KEYS to move Base-Man (FAST!)<br>
+                ARROW KEYS to move Base-Man<br>
                 Collect TX Orbs • Avoid Chain Ghosts<br>
-                Power Pellets = Bridge Mode
+                Power Pellets = Eat Ghosts!
             </p>
             <button id="startButton">START GAME</button>
         </div>
@@ -175,16 +149,17 @@
     </div>
 
     <script>
-        // ========== HIGH PERFORMANCE CONFIG ==========
+        // ========== FIXED GAME CONFIG ==========
         const TILE_SIZE = 20;
         const CANVAS_WIDTH = 560;
         const CANVAS_HEIGHT = 620;
+        const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
+        const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
         
-        // SPEED SETTINGS - MUCH FASTER
-        const PACMAN_SPEED = 4; // 2x faster
-        const GHOST_SPEED = 2.5; // 2.5x faster
-        const ANIMATION_SPEED = 0.2; // Faster animations
-        
+        // PROPER SPEED SETTINGS
+        const PACMAN_SPEED = 3;
+        const GHOST_SPEED = 1.5;
+
         // Game state
         let canvas, ctx;
         let gameActive = false;
@@ -195,20 +170,20 @@
             x: 0, y: 0, 
             direction: 'right', 
             nextDirection: 'right', 
-            speed: PACMAN_SPEED, 
-            mouthOpen: 0 
+            speed: PACMAN_SPEED,
+            mouthOpen: 0,
+            mouthDirection: 1
         };
         let ghosts = [];
         let dots = [];
         let powerPellets = [];
         let walls = [];
         let animationId;
-        let lastTime = 0;
         let powerMode = false;
         let powerModeTimer = 0;
-        const POWER_MODE_DURATION = 3000; // Shorter power mode
+        const POWER_MODE_DURATION = 5000;
 
-        // ========== OPTIMIZED MAZE ==========
+        // ========== FIXED MAZE WITH PROPER WALLS ==========
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -220,16 +195,16 @@
             [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // More open space
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], // Open tunnel
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
@@ -237,18 +212,17 @@
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
             [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        // ========== OPTIMIZED DRAWING ==========
+        // ========== FIXED DRAWING FUNCTIONS ==========
         function drawHex(x, y) {
             ctx.fillStyle = '#0052FF';
             ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
             
-            // Simple glow effect
             ctx.strokeStyle = '#00D1FF';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
@@ -257,50 +231,55 @@
         function drawTXOrb(x, y) {
             ctx.fillStyle = '#00D1FF';
             ctx.beginPath();
-            ctx.arc(x + 10, y + 10, 3, 0, Math.PI * 2);
+            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, 3, 0, Math.PI * 2);
             ctx.fill();
         }
 
         function drawPowerHex(x, y) {
             ctx.fillStyle = '#00D1FF';
             ctx.beginPath();
-            ctx.arc(x + 10, y + 10, 6, 0, Math.PI * 2);
+            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, 6, 0, Math.PI * 2);
             ctx.fill();
         }
 
         function drawBaseMan(x, y, dir, mouthOpen) {
+            const centerX = x + TILE_SIZE/2;
+            const centerY = y + TILE_SIZE/2;
+            
             // Base blue circle
             ctx.fillStyle = '#0052FF';
             ctx.beginPath();
-            ctx.arc(x + 10, y + 10, 8, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
             ctx.fill();
             
-            // Mouth animation
+            // Mouth animation - FIXED DIRECTIONS
             let startAngle, endAngle;
+            const mouthSize = 0.2 + mouthOpen * 0.6;
+            
             switch(dir) {
                 case 'right':
-                    startAngle = 0.2 + mouthOpen * 0.6;
-                    endAngle = Math.PI * 2 - (0.2 + mouthOpen * 0.6);
+                    startAngle = mouthSize;
+                    endAngle = Math.PI * 2 - mouthSize;
                     break;
                 case 'left':
-                    startAngle = Math.PI + 0.2 + mouthOpen * 0.6;
-                    endAngle = Math.PI - (0.2 + mouthOpen * 0.6);
+                    startAngle = Math.PI + mouthSize;
+                    endAngle = Math.PI - mouthSize;
                     break;
                 case 'up':
-                    startAngle = -Math.PI/2 + 0.2 + mouthOpen * 0.6;
-                    endAngle = Math.PI * 3/2 - (0.2 + mouthOpen * 0.6);
+                    startAngle = Math.PI * 1.5 + mouthSize;
+                    endAngle = Math.PI * 1.5 - mouthSize;
                     break;
                 case 'down':
-                    startAngle = Math.PI/2 + 0.2 + mouthOpen * 0.6;
-                    endAngle = Math.PI * 5/2 - (0.2 + mouthOpen * 0.6);
+                    startAngle = Math.PI * 0.5 + mouthSize;
+                    endAngle = Math.PI * 0.5 - mouthSize;
                     break;
             }
             
             // Mouth
             ctx.fillStyle = '#0A0B0D';
             ctx.beginPath();
-            ctx.moveTo(x + 10, y + 10);
-            ctx.arc(x + 10, y + 10, 8, startAngle, endAngle);
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, 8, startAngle, endAngle);
             ctx.closePath();
             ctx.fill();
         }
@@ -308,35 +287,44 @@
         function drawGhost(x, y, index, scared) {
             const colors = ['#FF4444', '#00FF88', '#00D1FF', '#FFAA00'];
             const symbols = ['Ξ', '◎', '⟠', '⚌'];
+            const centerX = x + TILE_SIZE/2;
+            const centerY = y + TILE_SIZE/2;
             
             ctx.fillStyle = scared ? '#0052FF' : colors[index];
             
-            // Ghost body (simplified)
+            // Ghost body
             ctx.beginPath();
-            ctx.arc(x + 10, y + 8, 7, Math.PI, 0, false);
-            ctx.lineTo(x + 17, y + 15);
-            ctx.lineTo(x + 13, y + 18);
-            ctx.lineTo(x + 10, y + 15);
-            ctx.lineTo(x + 7, y + 18);
-            ctx.lineTo(x + 3, y + 15);
+            ctx.arc(centerX, centerY - 2, 7, Math.PI, 0, false);
+            ctx.lineTo(centerX + 7, centerY + 5);
+            ctx.lineTo(centerX + 3, centerY + 8);
+            ctx.lineTo(centerX, centerY + 5);
+            ctx.lineTo(centerX - 3, centerY + 8);
+            ctx.lineTo(centerX - 7, centerY + 5);
             ctx.closePath();
             ctx.fill();
             
             // Eyes
             ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
-            ctx.arc(x + 7, y + 7, 2, 0, Math.PI * 2);
-            ctx.arc(x + 13, y + 7, 2, 0, Math.PI * 2);
+            ctx.arc(centerX - 3, centerY - 3, 2, 0, Math.PI * 2);
+            ctx.arc(centerX + 3, centerY - 3, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Pupils
+            ctx.fillStyle = scared ? '#0000FF' : '#000000';
+            ctx.beginPath();
+            ctx.arc(centerX - 3, centerY - 3, 1, 0, Math.PI * 2);
+            ctx.arc(centerX + 3, centerY - 3, 1, 0, Math.PI * 2);
             ctx.fill();
             
             // Symbol
             ctx.fillStyle = '#000000';
-            ctx.font = 'bold 10px Arial';
+            ctx.font = 'bold 8px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(symbols[index], x + 10, y + 14);
+            ctx.fillText(symbols[index], centerX, centerY + 4);
         }
 
-        // ========== OPTIMIZED GAME LOGIC ==========
+        // ========== FIXED GAME LOGIC ==========
         function init() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
@@ -369,7 +357,6 @@
             document.getElementById('gameOver').classList.add('hidden');
             
             if (animationId) cancelAnimationFrame(animationId);
-            lastTime = performance.now();
             gameLoop();
         }
 
@@ -382,7 +369,7 @@
             powerPellets = [];
             walls = [];
             
-            // Precompute maze objects for performance
+            // Reset maze objects
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
                     if (maze[y][x] === 0) dots.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
@@ -391,30 +378,30 @@
                 }
             }
             
+            // Reset pacman
             pacman.x = 14 * TILE_SIZE;
             pacman.y = 23 * TILE_SIZE;
             pacman.direction = 'right';
             pacman.nextDirection = 'right';
             pacman.mouthOpen = 0;
+            pacman.mouthDirection = 1;
             
+            // Reset ghosts
             ghosts = [
-                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED },
-                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', speed: GHOST_SPEED },
-                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', speed: GHOST_SPEED },
-                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED }
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED, alive: true },
+                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', speed: GHOST_SPEED, alive: true },
+                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', speed: GHOST_SPEED, alive: true },
+                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', speed: GHOST_SPEED, alive: true }
             ];
             
             document.getElementById('score').textContent = score;
             document.getElementById('lives').textContent = lives;
         }
 
-        function gameLoop(currentTime) {
+        function gameLoop() {
             if (!gameActive) return;
             
-            const deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
-            
-            // Clear canvas efficiently
+            // Clear canvas
             ctx.fillStyle = '#0A0B0D';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -424,13 +411,17 @@
             powerPellets.forEach(pellet => drawPowerHex(pellet.x, pellet.y));
             
             // Update game state
-            updatePacman(deltaTime);
-            updateGhosts(deltaTime);
+            updatePacman();
+            updateGhosts();
             checkCollisions();
             
             if (powerMode) {
-                powerModeTimer -= deltaTime;
-                if (powerModeTimer <= 0) powerMode = false;
+                powerModeTimer--;
+                if (powerModeTimer <= 0) {
+                    powerMode = false;
+                    // Reset all ghosts to alive when power mode ends
+                    ghosts.forEach(ghost => ghost.alive = true);
+                }
             }
             
             if (dots.length === 0 && powerPellets.length === 0) {
@@ -441,21 +432,26 @@
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function updatePacman(deltaTime) {
-            // Faster mouth animation
-            pacman.mouthOpen = (pacman.mouthOpen + ANIMATION_SPEED * deltaTime * 0.06) % 1;
+        // ========== FIXED PACMAN MOVEMENT ==========
+        function updatePacman() {
+            // Mouth animation
+            pacman.mouthOpen += 0.1 * pacman.mouthDirection;
+            if (pacman.mouthOpen >= 1 || pacman.mouthOpen <= 0) {
+                pacman.mouthDirection *= -1;
+            }
             
+            // Try to change direction if possible
             if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
                 pacman.direction = pacman.nextDirection;
             }
             
+            // Move in current direction if possible
             if (canMove(pacman.x, pacman.y, pacman.direction)) {
-                const moveDist = pacman.speed * (deltaTime * 0.06); // Frame-rate independent
                 switch(pacman.direction) {
-                    case 'up': pacman.y -= moveDist; break;
-                    case 'down': pacman.y += moveDist; break;
-                    case 'left': pacman.x -= moveDist; break;
-                    case 'right': pacman.x += moveDist; break;
+                    case 'up': pacman.y -= pacman.speed; break;
+                    case 'down': pacman.y += pacman.speed; break;
+                    case 'left': pacman.x -= pacman.speed; break;
+                    case 'right': pacman.x += pacman.speed; break;
                 }
             }
             
@@ -466,65 +462,144 @@
             drawBaseMan(pacman.x, pacman.y, pacman.direction, pacman.mouthOpen);
         }
 
-        function updateGhosts(deltaTime) {
+        // ========== FIXED WALL COLLISION ==========
+        function canMove(x, y, direction) {
+            // Calculate the next position
+            let nextX = x;
+            let nextY = y;
+            
+            switch(direction) {
+                case 'up': nextY -= pacman.speed; break;
+                case 'down': nextY += pacman.speed; break;
+                case 'left': nextX -= pacman.speed; break;
+                case 'right': nextX += pacman.speed; break;
+            }
+            
+            // Check all four corners of the pacman rectangle
+            const corners = [
+                { x: nextX + 2, y: nextY + 2 }, // top-left
+                { x: nextX + TILE_SIZE - 2, y: nextY + 2 }, // top-right
+                { x: nextX + 2, y: nextY + TILE_SIZE - 2 }, // bottom-left
+                { x: nextX + TILE_SIZE - 2, y: nextY + TILE_SIZE - 2 } // bottom-right
+            ];
+            
+            for (let corner of corners) {
+                const gridX = Math.floor(corner.x / TILE_SIZE);
+                const gridY = Math.floor(corner.y / TILE_SIZE);
+                
+                // Check if out of bounds or hitting a wall
+                if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+                    return false;
+                }
+                if (maze[gridY][gridX] === 1) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function updateGhosts() {
             ghosts.forEach((ghost, index) => {
-                if (Math.random() < 0.01 || !canMove(ghost.x, ghost.y, ghost.direction)) {
+                if (!ghost.alive) return; // Skip dead ghosts
+                
+                // Simple ghost AI
+                if (Math.random() < 0.02 || !canMoveGhost(ghost.x, ghost.y, ghost.direction)) {
                     const directions = ['up', 'down', 'left', 'right'];
-                    const validDirections = directions.filter(dir => canMove(ghost.x, ghost.y, dir));
+                    const validDirections = directions.filter(dir => canMoveGhost(ghost.x, ghost.y, dir));
                     if (validDirections.length > 0) {
                         ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
                     }
                 }
                 
-                if (canMove(ghost.x, ghost.y, ghost.direction)) {
-                    const speed = powerMode ? ghost.speed * 0.7 : ghost.speed;
-                    const moveDist = speed * (deltaTime * 0.06);
+                // Move ghost
+                if (canMoveGhost(ghost.x, ghost.y, ghost.direction)) {
+                    const speed = powerMode ? ghost.speed * 0.5 : ghost.speed;
                     switch(ghost.direction) {
-                        case 'up': ghost.y -= moveDist; break;
-                        case 'down': ghost.y += moveDist; break;
-                        case 'left': ghost.x -= moveDist; break;
-                        case 'right': ghost.x += moveDist; break;
+                        case 'up': ghost.y -= speed; break;
+                        case 'down': ghost.y += speed; break;
+                        case 'left': ghost.x -= speed; break;
+                        case 'right': ghost.x += speed; break;
                     }
                 }
                 
+                // Tunnel wrapping
                 if (ghost.x < -TILE_SIZE) ghost.x = CANVAS_WIDTH;
                 else if (ghost.x > CANVAS_WIDTH) ghost.x = -TILE_SIZE;
                 
-                drawGhost(ghost.x, ghost.y, index, powerMode);
+                drawGhost(ghost.x, ghost.y, index, powerMode && ghost.alive);
             });
         }
 
-        function canMove(x, y, direction) {
-            let testX = x, testY = y;
-            const buffer = 2; // Smaller collision buffer for faster movement
+        function canMoveGhost(x, y, direction) {
+            let nextX = x;
+            let nextY = y;
             
             switch(direction) {
-                case 'up': testY -= buffer; break;
-                case 'down': testY += TILE_SIZE - buffer; break;
-                case 'left': testX -= buffer; break;
-                case 'right': testX += TILE_SIZE - buffer; break;
+                case 'up': nextY -= GHOST_SPEED; break;
+                case 'down': nextY += GHOST_SPEED; break;
+                case 'left': nextX -= GHOST_SPEED; break;
+                case 'right': nextX += GHOST_SPEED; break;
             }
             
-            const gridX = Math.floor(testX / TILE_SIZE);
-            const gridY = Math.floor(testY / TILE_SIZE);
+            const corners = [
+                { x: nextX + 2, y: nextY + 2 },
+                { x: nextX + TILE_SIZE - 2, y: nextY + 2 },
+                { x: nextX + 2, y: nextY + TILE_SIZE - 2 },
+                { x: nextX + TILE_SIZE - 2, y: nextY + TILE_SIZE - 2 }
+            ];
             
-            return gridX >= 0 && gridX < 28 && gridY >= 0 && gridY < 31 && maze[gridY][gridX] !== 1;
+            for (let corner of corners) {
+                const gridX = Math.floor(corner.x / TILE_SIZE);
+                const gridY = Math.floor(corner.y / TILE_SIZE);
+                
+                if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+                    return false;
+                }
+                if (maze[gridY][gridX] === 1) {
+                    return false;
+                }
+            }
+            
+            return true;
         }
 
+        // ========== FIXED COLLISION DETECTION ==========
         function checkCollisions() {
-            // Optimized collision checking
+            // Dot collisions
             for (let i = dots.length - 1; i >= 0; i--) {
                 const dot = dots[i];
-                if (Math.abs(pacman.x - dot.x) < 12 && Math.abs(pacman.y - dot.y) < 12) {
+                const dotCenterX = dot.x + TILE_SIZE/2;
+                const dotCenterY = dot.y + TILE_SIZE/2;
+                const pacmanCenterX = pacman.x + TILE_SIZE/2;
+                const pacmanCenterY = pacman.y + TILE_SIZE/2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(dotCenterX - pacmanCenterX, 2) + 
+                    Math.pow(dotCenterY - pacmanCenterY, 2)
+                );
+                
+                if (distance < 10) {
                     dots.splice(i, 1);
                     score += 10;
                     document.getElementById('score').textContent = score;
                 }
             }
             
+            // Power pellet collisions
             for (let i = powerPellets.length - 1; i >= 0; i--) {
                 const pellet = powerPellets[i];
-                if (Math.abs(pacman.x - pellet.x) < 15 && Math.abs(pacman.y - pellet.y) < 15) {
+                const pelletCenterX = pellet.x + TILE_SIZE/2;
+                const pelletCenterY = pellet.y + TILE_SIZE/2;
+                const pacmanCenterX = pacman.x + TILE_SIZE/2;
+                const pacmanCenterY = pacman.y + TILE_SIZE/2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(pelletCenterX - pacmanCenterX, 2) + 
+                    Math.pow(pelletCenterY - pacmanCenterY, 2)
+                );
+                
+                if (distance < 12) {
                     powerPellets.splice(i, 1);
                     score += 50;
                     document.getElementById('score').textContent = score;
@@ -533,18 +608,41 @@
                 }
             }
             
+            // Ghost collisions - FIXED LOGIC
             ghosts.forEach(ghost => {
-                if (Math.abs(pacman.x - ghost.x) < 15 && Math.abs(pacman.y - ghost.y) < 15) {
+                if (!ghost.alive) return; // Skip dead ghosts
+                
+                const ghostCenterX = ghost.x + TILE_SIZE/2;
+                const ghostCenterY = ghost.y + TILE_SIZE/2;
+                const pacmanCenterX = pacman.x + TILE_SIZE/2;
+                const pacmanCenterY = pacman.y + TILE_SIZE/2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(ghostCenterX - pacmanCenterX, 2) + 
+                    Math.pow(ghostCenterY - pacmanCenterY, 2)
+                );
+                
+                if (distance < 15) {
                     if (powerMode) {
-                        ghost.x = 13 * TILE_SIZE;
-                        ghost.y = 11 * TILE_SIZE;
+                        // Eat ghost (ghost dies)
+                        ghost.alive = false;
                         score += 200;
                         document.getElementById('score').textContent = score;
+                        
+                        // Respawn ghost after 5 seconds
+                        setTimeout(() => {
+                            ghost.alive = true;
+                            ghost.x = 13 * TILE_SIZE;
+                            ghost.y = 11 * TILE_SIZE;
+                        }, 5000);
                     } else {
+                        // Pacman dies
                         lives--;
                         document.getElementById('lives').textContent = lives;
-                        if (lives <= 0) gameOver();
-                        else {
+                        if (lives <= 0) {
+                            gameOver();
+                        } else {
+                            // Reset positions
                             pacman.x = 14 * TILE_SIZE;
                             pacman.y = 23 * TILE_SIZE;
                             pacman.direction = 'right';
