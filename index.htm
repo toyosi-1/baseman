@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaseMan - Crypto Pac-Man</title>
+    <title>BASE-MAN - Onchain Labyrinth</title>
     <style>
         * {
             margin: 0;
@@ -11,21 +11,24 @@
             box-sizing: border-box;
         }
         body {
-            background: linear-gradient(135deg, #0052FF 0%, #00D1FF 100%);
-            font-family: 'Arial', sans-serif;
+            background: #0A0B0D;
+            font-family: 'Courier New', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            color: white;
+            color: #00D1FF;
             padding: 20px;
+            overflow: hidden;
+            image-rendering: pixelated;
         }
         .game-container {
             position: relative;
             background: #000;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 4px solid #0052FF;
+            border-radius: 8px;
+            box-shadow: 0 0 40px #0052FF;
             overflow: hidden;
         }
         canvas {
@@ -41,20 +44,16 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 15px;
         }
         .score-display {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 8px;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
+            text-shadow: 0 0 10px #00D1FF;
+            background: rgba(0, 82, 255, 0.3);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #0052FF;
         }
         .game-over, .game-start {
             position: absolute;
@@ -62,87 +61,98 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(10, 11, 13, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
+            text-align: center;
         }
         .hidden {
             display: none !important;
         }
         button {
-            background: #0052FF;
+            background: linear-gradient(45deg, #0052FF, #00D1FF);
             color: white;
             border: none;
             padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 18px;
+            border-radius: 4px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             pointer-events: auto;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 20px #0052FF;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
         }
         button:hover {
-            background: #0040CC;
             transform: translateY(-2px);
+            box-shadow: 0 0 30px #00D1FF;
         }
         h1 {
-            font-size: 42px;
+            font-size: 36px;
             margin-bottom: 10px;
             text-align: center;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 0 20px #00D1FF;
+            color: #FFFFFF;
         }
         .instructions {
             text-align: center;
             max-width: 400px;
-            line-height: 1.5;
-            margin-bottom: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            background: rgba(0, 82, 255, 0.2);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #0052FF;
+            font-size: 14px;
         }
         .mobile-controls {
             display: none;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-            width: 200px;
-            height: 200px;
+            gap: 8px;
+            margin-top: 15px;
+            width: 180px;
+            height: 180px;
         }
         .mobile-controls button {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            font-size: 24px;
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(0, 82, 255, 0.7);
         }
         .up { grid-column: 2; grid-row: 1; }
         .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
         .down { grid-column: 2; grid-row: 3; }
-        .crypto-theme {
-            background: rgba(0, 82, 255, 0.1);
-            border: 2px solid #00D1FF;
-            border-radius: 8px;
+        .chain-info {
+            background: rgba(0, 82, 255, 0.2);
+            border: 1px solid #0052FF;
+            border-radius: 4px;
             padding: 10px;
-            margin: 10px 0;
+            margin: 8px 0;
+            font-size: 12px;
         }
 
         @media (max-width: 768px) {
             .mobile-controls {
                 display: grid;
             }
+            h1 {
+                font-size: 28px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🟦 BASEMAN 👑</h1>
+    <h1>🟦 BASE-MAN 👑</h1>
     
     <div class="game-container">
         <canvas id="gameCanvas" width="560" height="620"></canvas>
@@ -164,16 +174,16 @@
         </div>
         
         <div id="gameStart" class="game-start">
-            <h2>🟦 BASEMAN 👑</h2>
+            <h2>🟦 BASE-MAN 👑</h2>
             <p class="instructions">
-                Use ARROW KEYS to move BaseMan<br>
-                Collect <span style="color: #00D1FF">Base coins</span> and avoid the chain ghosts!<br>
-                Power pellets make you temporarily invincible
+                ARROW KEYS to move Base-Man<br>
+                Collect <span style="color: #00D1FF">TX Orbs</span> • Avoid Chain Ghosts<br>
+                Power Pellets = Bridge Mode
             </p>
-            <div class="crypto-theme">
+            <div class="chain-info">
                 <strong>Chain Ghosts:</strong><br>
-                👻 ETH (Red) | 👻 SOL (Green)<br>
-                👻 ARB (Blue) | 👻 OP (Yellow)
+                👻 ETH (Aggressive) | 👻 SOL (Ambusher)<br>
+                👻 ARB (Flanker) | 👻 OP (Shy)
             </div>
             <button id="startButton">START BUILDING</button>
         </div>
@@ -188,7 +198,7 @@
 
     <script>
         // Game constants
-        const TILE_SIZE = 20;
+        const TILE_SIZE = 32;
         const CANVAS_WIDTH = 560;
         const CANVAS_HEIGHT = 620;
         const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
@@ -204,17 +214,31 @@
         let ghosts = [];
         let dots = [];
         let powerPellets = [];
+        let walls = [];
         let animationId;
         let powerMode = false;
         let powerModeTimer = 0;
-        const POWER_MODE_DURATION = 5000; // 5 seconds
+        const POWER_MODE_DURATION = 5000;
+
+        // Asset loading
+        const assets = {};
+        const assetUrls = {
+            baseMan: 'https://i.imgur.com/7V2kQ9P.png',
+            ethGhost: 'https://i.imgur.com/9z8WQ7x.png',
+            solGhost: 'https://i.imgur.com/3M4aK1p.png',
+            arbGhost: 'https://i.imgur.com/5X2vR6q.png',
+            opGhost: 'https://i.imgur.com/8Y2bL3N.png'
+        };
+
+        let assetsLoaded = 0;
+        const totalAssets = Object.keys(assetUrls).length;
 
         // Chain ghosts data
         const chainGhosts = [
-            { name: 'ETH', color: '#FF6B6B', symbol: 'Ξ' },
-            { name: 'SOL', color: '#00FF88', symbol: '◎' },
-            { name: 'ARB', color: '#00D1FF', symbol: '⟠' },
-            { name: 'OP', color: '#FFD93D', symbol: '⚌' }
+            { name: 'ETH', color: '#FF4444', speed: 1.2, personality: 'chaser' },
+            { name: 'SOL', color: '#00FF88', speed: 1.1, personality: 'ambusher' },
+            { name: 'ARB', color: '#00D1FF', speed: 1.0, personality: 'flanker' },
+            { name: 'OP', color: '#FFAA00', speed: 0.9, personality: 'shy' }
         ];
 
         // Maze layout (1 = wall, 0 = path, 2 = power pellet)
@@ -263,10 +287,162 @@
         const restartButton = document.getElementById('restartButton');
         const shareButton = document.getElementById('shareButton');
 
+        // === ASSET LOADING ===
+        function loadAssets() {
+            Object.keys(assetUrls).forEach(key => {
+                assets[key] = new Image();
+                assets[key].onload = () => {
+                    assetsLoaded++;
+                    if (assetsLoaded === totalAssets) {
+                        console.log('🎮 All assets loaded!');
+                    }
+                };
+                assets[key].src = assetUrls[key];
+            });
+        }
+
+        // === DRAWING FUNCTIONS ===
+        function drawHex(x, y) {
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#00D1FF';
+            
+            // Hexagon path
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i;
+                const hexX = x + 16 + 14 * Math.cos(angle);
+                const hexY = y + 16 + 14 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(hexX, hexY);
+                else ctx.lineTo(hexX, hexY);
+            }
+            ctx.closePath();
+            
+            // Gradient fill
+            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 14);
+            gradient.addColorStop(0, '#0052FF');
+            gradient.addColorStop(1, '#0030A0');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Neon stroke
+            ctx.strokeStyle = '#00D1FF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawTXOrb(x, y) {
+            ctx.save();
+            const pulse = Math.sin(Date.now() * 0.01) * 2;
+            
+            ctx.shadowBlur = 12 + pulse;
+            ctx.shadowColor = '#00D1FF';
+            
+            // Pulsing orb
+            ctx.beginPath();
+            ctx.arc(x + 16, y + 16, 3 + pulse * 0.5, 0, Math.PI * 2);
+            
+            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 4);
+            gradient.addColorStop(0, '#FFFFFF');
+            gradient.addColorStop(0.7, '#00D1FF');
+            gradient.addColorStop(1, '#0052FF');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPowerHex(x, y) {
+            ctx.save();
+            const pulse = Math.sin(Date.now() * 0.008) * 3;
+            
+            ctx.shadowBlur = 15 + pulse;
+            ctx.shadowColor = '#00D1FF';
+            
+            // Large hexagon
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i;
+                const hexX = x + 16 + (8 + pulse) * Math.cos(angle);
+                const hexY = y + 16 + (8 + pulse) * Math.sin(angle);
+                if (i === 0) ctx.moveTo(hexX, hexY);
+                else ctx.lineTo(hexX, hexY);
+            }
+            ctx.closePath();
+            
+            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 10);
+            gradient.addColorStop(0, '#FFFFFF');
+            gradient.addColorStop(0.5, '#00D1FF');
+            gradient.addColorStop(1, '#0052FF');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawBaseMan(x, y, dir, mouthOpen) {
+            if (!assets.baseMan?.complete) return;
+            
+            ctx.save();
+            ctx.translate(x + 16, y + 16);
+            
+            // Rotate based on direction
+            let rotation = 0;
+            switch(dir) {
+                case 'up': rotation = -Math.PI / 2; break;
+                case 'down': rotation = Math.PI / 2; break;
+                case 'left': rotation = Math.PI; break;
+                case 'right': rotation = 0; break;
+            }
+            ctx.rotate(rotation);
+            
+            // Base logo body with glow
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00D1FF';
+            ctx.drawImage(assets.baseMan, -16, -16, 32, 32);
+            
+            // Animated mouth (black pie slice)
+            const mouthAngle = 0.2 + mouthOpen * 0.6; // 0.2 to 0.8 radians
+            ctx.fillStyle = '#0A0B0D';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, 12, mouthAngle, Math.PI * 2 - mouthAngle);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawGhost(x, y, index, scared) {
+            const ghostAssets = [assets.ethGhost, assets.solGhost, assets.arbGhost, assets.opGhost];
+            if (!ghostAssets[index]?.complete) return;
+            
+            ctx.save();
+            
+            if (scared) {
+                // Blue scared mode
+                ctx.filter = 'hue-rotate(200deg) brightness(1.5)';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#0052FF';
+            } else {
+                // Normal mode with chain-specific glow
+                const ghostColors = ['#FF4444', '#00FF88', '#00D1FF', '#FFAA00'];
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = ghostColors[index];
+            }
+            
+            // Draw ghost sprite
+            ctx.drawImage(ghostAssets[index], x, y, 32, 32);
+            
+            ctx.restore();
+        }
+
         // Initialize game
         function init() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
+            
+            // Load assets
+            loadAssets();
             
             // Set high score display
             highScoreElement.textContent = highScore;
@@ -338,18 +514,21 @@
             // Initialize dots and power pellets
             dots = [];
             powerPellets = [];
+            walls = [];
             
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
                     if (maze[y][x] === 0) {
-                        dots.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
+                        dots.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
                     } else if (maze[y][x] === 2) {
-                        powerPellets.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
+                        powerPellets.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
+                    } else if (maze[y][x] === 1) {
+                        walls.push({ x: x * TILE_SIZE, y: y * TILE_SIZE });
                     }
                 }
             }
             
-            // Initialize BaseMan (Pac-Man with Base logo)
+            // Initialize BaseMan
             pacman.x = 14 * TILE_SIZE;
             pacman.y = 23 * TILE_SIZE;
             pacman.direction = 'right';
@@ -358,10 +537,10 @@
             
             // Initialize chain ghosts
             ghosts = [
-                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', ...chainGhosts[0], speed: 1 },
-                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', ...chainGhosts[1], speed: 1 },
-                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', ...chainGhosts[2], speed: 1 },
-                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', ...chainGhosts[3], speed: 1 }
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', ...chainGhosts[0] },
+                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', ...chainGhosts[1] },
+                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', ...chainGhosts[2] },
+                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', ...chainGhosts[3] }
             ];
             
             // Update UI
@@ -374,17 +553,29 @@
             if (!gameActive) return;
             
             // Clear canvas
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = '#0A0B0D';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw maze with Base theme
-            drawMaze();
+            // Draw walls
+            walls.forEach(wall => {
+                drawHex(wall.x, wall.y);
+            });
             
-            // Update and draw game objects
+            // Draw dots
+            dots.forEach(dot => {
+                drawTXOrb(dot.x, dot.y);
+            });
+            
+            // Draw power pellets
+            powerPellets.forEach(pellet => {
+                drawPowerHex(pellet.x, pellet.y);
+            });
+            
+            // Update and draw BaseMan
             updatePacman();
+            
+            // Update and draw ghosts
             updateGhosts();
-            drawDots();
-            drawPowerPellets();
             
             // Check collisions
             checkCollisions();
@@ -405,75 +596,6 @@
             
             // Continue game loop
             animationId = requestAnimationFrame(gameLoop);
-        }
-
-        // Draw the maze with Base branding
-        function drawMaze() {
-            ctx.strokeStyle = '#0052FF';
-            ctx.lineWidth = 2;
-            ctx.fillStyle = '#0052FF';
-            
-            for (let y = 0; y < maze.length; y++) {
-                for (let x = 0; x < maze[y].length; x++) {
-                    if (maze[y][x] === 1) {
-                        // Draw Base-themed walls with gradient
-                        const gradient = ctx.createLinearGradient(
-                            x * TILE_SIZE, y * TILE_SIZE,
-                            (x + 1) * TILE_SIZE, (y + 1) * TILE_SIZE
-                        );
-                        gradient.addColorStop(0, '#0052FF');
-                        gradient.addColorStop(1, '#00D1FF');
-                        ctx.fillStyle = gradient;
-                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    }
-                }
-            }
-        }
-
-        // Draw Base coins (dots)
-        function drawDots() {
-            ctx.fillStyle = '#00D1FF';
-            dots.forEach(dot => {
-                // Create glowing Base coin effect
-                const gradient = ctx.createRadialGradient(
-                    dot.x, dot.y, 0,
-                    dot.x, dot.y, 4
-                );
-                gradient.addColorStop(0, '#FFFFFF');
-                gradient.addColorStop(0.7, '#00D1FF');
-                gradient.addColorStop(1, '#0052FF');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Draw power pellets (Base logo orbs)
-        function drawPowerPellets() {
-            powerPellets.forEach(pellet => {
-                // Create glowing Base power pellet
-                const gradient = ctx.createRadialGradient(
-                    pellet.x, pellet.y, 0,
-                    pellet.x, pellet.y, 8
-                );
-                gradient.addColorStop(0, '#FFFFFF');
-                gradient.addColorStop(0.5, '#00D1FF');
-                gradient.addColorStop(1, '#0052FF');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(pellet.x, pellet.y, 6, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Add pulsing effect
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.arc(pellet.x, pellet.y, 8 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
-                ctx.stroke();
-            });
         }
 
         // Update BaseMan position and animation
@@ -514,52 +636,14 @@
                 pacman.x = -TILE_SIZE;
             }
             
-            // Draw BaseMan (Base logo with mouth)
-            drawPacman();
-        }
-
-        // Draw BaseMan as Base logo with animated mouth
-        function drawPacman() {
-            ctx.save();
-            ctx.translate(pacman.x, pacman.y);
-            
-            // Rotate based on direction
-            let rotation = 0;
-            switch(pacman.direction) {
-                case 'up': rotation = -Math.PI / 2; break;
-                case 'down': rotation = Math.PI / 2; break;
-                case 'left': rotation = Math.PI; break;
-                case 'right': rotation = 0; break;
-            }
-            ctx.rotate(rotation);
-            
-            // Draw BaseMan body (Base logo inspired)
-            const size = TILE_SIZE / 2 - 1;
-            const mouthAngle = Math.PI / 4 * pacman.mouthOpen;
-            
-            ctx.fillStyle = powerMode ? '#00D1FF' : '#FFD93D'; // Gold like Base logo
-            ctx.beginPath();
-            ctx.arc(0, 0, size, mouthAngle, (Math.PI * 2) - mouthAngle);
-            ctx.lineTo(0, 0);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Add Base logo crown detail
-            ctx.fillStyle = powerMode ? '#0052FF' : '#0052FF';
-            ctx.beginPath();
-            ctx.moveTo(-size * 0.3, -size * 0.2);
-            ctx.lineTo(0, -size * 0.6);
-            ctx.lineTo(size * 0.3, -size * 0.2);
-            ctx.closePath();
-            ctx.fill();
-            
-            ctx.restore();
+            // Draw BaseMan
+            drawBaseMan(pacman.x, pacman.y, pacman.direction, pacman.mouthOpen);
         }
 
         // Update ghost positions and AI
         function updateGhosts() {
-            ghosts.forEach(ghost => {
-                // Simple ghost AI - random movement with basic chasing
+            ghosts.forEach((ghost, index) => {
+                // Simple ghost AI
                 if (Math.random() < 0.02 || !canMove(ghost.x, ghost.y, ghost.direction)) {
                     const directions = ['up', 'down', 'left', 'right'];
                     const validDirections = directions.filter(dir => canMove(ghost.x, ghost.y, dir));
@@ -587,57 +671,8 @@
                 }
                 
                 // Draw ghost
-                drawGhost(ghost);
+                drawGhost(ghost.x, ghost.y, index, powerMode);
             });
-        }
-
-        // Draw chain ghosts as crypto symbols
-        function drawGhost(ghost) {
-            const size = TILE_SIZE / 2 - 2;
-            
-            // Ghost body
-            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
-            ctx.beginPath();
-            ctx.arc(ghost.x, ghost.y, size, Math.PI, 0, false);
-            ctx.lineTo(ghost.x + size, ghost.y + size);
-            ctx.lineTo(ghost.x - size, ghost.y + size);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Ghost wavy bottom
-            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(ghost.x - size + i * size, ghost.y + size, 2, 0, Math.PI);
-                ctx.fill();
-            }
-            
-            // Ghost eyes
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
-            ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#0000FF';
-            ctx.beginPath();
-            ctx.arc(ghost.x - 3, ghost.y - 2, 1, 0, Math.PI * 2);
-            ctx.arc(ghost.x + 3, ghost.y - 2, 1, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw chain symbol
-            ctx.fillStyle = '#000000';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(ghost.symbol, ghost.x, ghost.y + 8);
-            
-            // Draw chain name when powered
-            if (powerMode) {
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = '8px Arial';
-                ctx.fillText(ghost.name, ghost.x, ghost.y - 10);
-            }
         }
 
         // Check if movement is possible
@@ -668,7 +703,7 @@
             for (let i = dots.length - 1; i >= 0; i--) {
                 const dot = dots[i];
                 const distance = Math.sqrt((pacman.x - dot.x) ** 2 + (pacman.y - dot.y) ** 2);
-                if (distance < 10) {
+                if (distance < 15) {
                     dots.splice(i, 1);
                     score += 10;
                     scoreElement.textContent = score;
@@ -679,7 +714,7 @@
             for (let i = powerPellets.length - 1; i >= 0; i--) {
                 const pellet = powerPellets[i];
                 const distance = Math.sqrt((pacman.x - pellet.x) ** 2 + (pacman.y - pellet.y) ** 2);
-                if (distance < 12) {
+                if (distance < 20) {
                     powerPellets.splice(i, 1);
                     score += 50;
                     scoreElement.textContent = score;
@@ -691,15 +726,15 @@
             // Check ghost collisions
             ghosts.forEach(ghost => {
                 const distance = Math.sqrt((pacman.x - ghost.x) ** 2 + (pacman.y - ghost.y) ** 2);
-                if (distance < 15) {
+                if (distance < 20) {
                     if (powerMode) {
-                        // Eat ghost - "Bridge to chain"
+                        // Eat ghost
                         ghost.x = 13 * TILE_SIZE;
                         ghost.y = 11 * TILE_SIZE;
                         score += 200;
                         scoreElement.textContent = score;
                     } else {
-                        // Lose life - "Rug pull"
+                        // Lose life
                         lives--;
                         livesElement.textContent = lives;
                         
@@ -719,7 +754,7 @@
 
         // Level complete
         function levelComplete() {
-            score += 1000; // Level completion bonus
+            score += 1000;
             scoreElement.textContent = score;
             
             if (score > highScore) {
