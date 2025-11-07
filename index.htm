@@ -21,7 +21,6 @@
             color: #00D1FF;
             padding: 20px;
             overflow: hidden;
-            image-rendering: pixelated;
         }
         .game-container {
             position: relative;
@@ -33,6 +32,9 @@
         }
         canvas {
             display: block;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
         }
         .ui-overlay {
             position: absolute;
@@ -198,7 +200,7 @@
 
     <script>
         // Game constants
-        const TILE_SIZE = 32;
+        const TILE_SIZE = 20;
         const CANVAS_WIDTH = 560;
         const CANVAS_HEIGHT = 620;
         const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
@@ -220,26 +222,88 @@
         let powerModeTimer = 0;
         const POWER_MODE_DURATION = 5000;
 
-        // Asset loading
-        const assets = {};
-        const assetUrls = {
-            baseMan: 'https://i.imgur.com/7V2kQ9P.png',
-            ethGhost: 'https://i.imgur.com/9z8WQ7x.png',
-            solGhost: 'https://i.imgur.com/3M4aK1p.png',
-            arbGhost: 'https://i.imgur.com/5X2vR6q.png',
-            opGhost: 'https://i.imgur.com/8Y2bL3N.png'
+        // Create simple pixel art programmatically (no external images needed)
+        function createBaseManSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            
+            // Base blue circle
+            ctx.fillStyle = '#0052FF';
+            ctx.beginPath();
+            ctx.arc(16, 16, 14, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // White inner circle
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(16, 16, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Base triangle
+            ctx.fillStyle = '#0052FF';
+            ctx.beginPath();
+            ctx.moveTo(16, 8);
+            ctx.lineTo(22, 18);
+            ctx.lineTo(10, 18);
+            ctx.closePath();
+            ctx.fill();
+            
+            return canvas;
+        }
+
+        function createGhostSprite(color, symbol) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            
+            // Ghost body
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(16, 12, 10, Math.PI, 0, false); // Top semi-circle
+            ctx.lineTo(26, 22);
+            ctx.lineTo(22, 26);
+            ctx.lineTo(18, 22);
+            ctx.lineTo(14, 26);
+            ctx.lineTo(10, 22);
+            ctx.lineTo(6, 26);
+            ctx.lineTo(6, 22);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(12, 10, 3, 0, Math.PI * 2);
+            ctx.arc(20, 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#0000FF';
+            ctx.beginPath();
+            ctx.arc(12, 10, 1.5, 0, Math.PI * 2);
+            ctx.arc(20, 10, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Chain symbol
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol, 16, 25);
+            
+            return canvas;
+        }
+
+        // Create sprites
+        const sprites = {
+            baseMan: createBaseManSprite(),
+            ethGhost: createGhostSprite('#FF4444', 'Ξ'),
+            solGhost: createGhostSprite('#00FF88', '◎'),
+            arbGhost: createGhostSprite('#00D1FF', '⟠'),
+            opGhost: createGhostSprite('#FFAA00', '⚌')
         };
-
-        let assetsLoaded = 0;
-        const totalAssets = Object.keys(assetUrls).length;
-
-        // Chain ghosts data
-        const chainGhosts = [
-            { name: 'ETH', color: '#FF4444', speed: 1.2, personality: 'chaser' },
-            { name: 'SOL', color: '#00FF88', speed: 1.1, personality: 'ambusher' },
-            { name: 'ARB', color: '#00D1FF', speed: 1.0, personality: 'flanker' },
-            { name: 'OP', color: '#FFAA00', speed: 0.9, personality: 'shy' }
-        ];
 
         // Maze layout (1 = wall, 0 = path, 2 = power pellet)
         const maze = [
@@ -287,19 +351,13 @@
         const restartButton = document.getElementById('restartButton');
         const shareButton = document.getElementById('shareButton');
 
-        // === ASSET LOADING ===
-        function loadAssets() {
-            Object.keys(assetUrls).forEach(key => {
-                assets[key] = new Image();
-                assets[key].onload = () => {
-                    assetsLoaded++;
-                    if (assetsLoaded === totalAssets) {
-                        console.log('🎮 All assets loaded!');
-                    }
-                };
-                assets[key].src = assetUrls[key];
-            });
-        }
+        // Chain ghosts data
+        const chainGhosts = [
+            { name: 'ETH', color: '#FF4444', speed: 1.2, personality: 'chaser' },
+            { name: 'SOL', color: '#00FF88', speed: 1.1, personality: 'ambusher' },
+            { name: 'ARB', color: '#00D1FF', speed: 1.0, personality: 'flanker' },
+            { name: 'OP', color: '#FFAA00', speed: 0.9, personality: 'shy' }
+        ];
 
         // === DRAWING FUNCTIONS ===
         function drawHex(x, y) {
@@ -311,15 +369,15 @@
             ctx.beginPath();
             for (let i = 0; i < 6; i++) {
                 const angle = (Math.PI / 3) * i;
-                const hexX = x + 16 + 14 * Math.cos(angle);
-                const hexY = y + 16 + 14 * Math.sin(angle);
+                const hexX = x + 10 + 8 * Math.cos(angle);
+                const hexY = y + 10 + 8 * Math.sin(angle);
                 if (i === 0) ctx.moveTo(hexX, hexY);
                 else ctx.lineTo(hexX, hexY);
             }
             ctx.closePath();
             
             // Gradient fill
-            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 14);
+            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 8);
             gradient.addColorStop(0, '#0052FF');
             gradient.addColorStop(1, '#0030A0');
             ctx.fillStyle = gradient;
@@ -336,14 +394,14 @@
             ctx.save();
             const pulse = Math.sin(Date.now() * 0.01) * 2;
             
-            ctx.shadowBlur = 12 + pulse;
+            ctx.shadowBlur = 8 + pulse;
             ctx.shadowColor = '#00D1FF';
             
             // Pulsing orb
             ctx.beginPath();
-            ctx.arc(x + 16, y + 16, 3 + pulse * 0.5, 0, Math.PI * 2);
+            ctx.arc(x + 10, y + 10, 2 + pulse * 0.3, 0, Math.PI * 2);
             
-            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 4);
+            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 3);
             gradient.addColorStop(0, '#FFFFFF');
             gradient.addColorStop(0.7, '#00D1FF');
             gradient.addColorStop(1, '#0052FF');
@@ -354,23 +412,23 @@
 
         function drawPowerHex(x, y) {
             ctx.save();
-            const pulse = Math.sin(Date.now() * 0.008) * 3;
+            const pulse = Math.sin(Date.now() * 0.008) * 2;
             
-            ctx.shadowBlur = 15 + pulse;
+            ctx.shadowBlur = 12 + pulse;
             ctx.shadowColor = '#00D1FF';
             
             // Large hexagon
             ctx.beginPath();
             for (let i = 0; i < 6; i++) {
                 const angle = (Math.PI / 3) * i;
-                const hexX = x + 16 + (8 + pulse) * Math.cos(angle);
-                const hexY = y + 16 + (8 + pulse) * Math.sin(angle);
+                const hexX = x + 10 + (5 + pulse) * Math.cos(angle);
+                const hexY = y + 10 + (5 + pulse) * Math.sin(angle);
                 if (i === 0) ctx.moveTo(hexX, hexY);
                 else ctx.lineTo(hexX, hexY);
             }
             ctx.closePath();
             
-            const gradient = ctx.createRadialGradient(x+16, y+16, 0, x+16, y+16, 10);
+            const gradient = ctx.createRadialGradient(x+10, y+10, 0, x+10, y+10, 6);
             gradient.addColorStop(0, '#FFFFFF');
             gradient.addColorStop(0.5, '#00D1FF');
             gradient.addColorStop(1, '#0052FF');
@@ -380,10 +438,8 @@
         }
 
         function drawBaseMan(x, y, dir, mouthOpen) {
-            if (!assets.baseMan?.complete) return;
-            
             ctx.save();
-            ctx.translate(x + 16, y + 16);
+            ctx.translate(x + 10, y + 10);
             
             // Rotate based on direction
             let rotation = 0;
@@ -396,16 +452,16 @@
             ctx.rotate(rotation);
             
             // Base logo body with glow
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 8;
             ctx.shadowColor = '#00D1FF';
-            ctx.drawImage(assets.baseMan, -16, -16, 32, 32);
+            ctx.drawImage(sprites.baseMan, -10, -10, 20, 20);
             
             // Animated mouth (black pie slice)
             const mouthAngle = 0.2 + mouthOpen * 0.6; // 0.2 to 0.8 radians
             ctx.fillStyle = '#0A0B0D';
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.arc(0, 0, 12, mouthAngle, Math.PI * 2 - mouthAngle);
+            ctx.arc(0, 0, 8, mouthAngle, Math.PI * 2 - mouthAngle);
             ctx.closePath();
             ctx.fill();
             
@@ -413,25 +469,24 @@
         }
 
         function drawGhost(x, y, index, scared) {
-            const ghostAssets = [assets.ethGhost, assets.solGhost, assets.arbGhost, assets.opGhost];
-            if (!ghostAssets[index]?.complete) return;
+            const ghostSprites = [sprites.ethGhost, sprites.solGhost, sprites.arbGhost, sprites.opGhost];
             
             ctx.save();
             
             if (scared) {
                 // Blue scared mode
                 ctx.filter = 'hue-rotate(200deg) brightness(1.5)';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 12;
                 ctx.shadowColor = '#0052FF';
             } else {
                 // Normal mode with chain-specific glow
                 const ghostColors = ['#FF4444', '#00FF88', '#00D1FF', '#FFAA00'];
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 6;
                 ctx.shadowColor = ghostColors[index];
             }
             
             // Draw ghost sprite
-            ctx.drawImage(ghostAssets[index], x, y, 32, 32);
+            ctx.drawImage(ghostSprites[index], x, y, 20, 20);
             
             ctx.restore();
         }
@@ -440,9 +495,6 @@
         function init() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
-            
-            // Load assets
-            loadAssets();
             
             // Set high score display
             highScoreElement.textContent = highScore;
@@ -703,7 +755,7 @@
             for (let i = dots.length - 1; i >= 0; i--) {
                 const dot = dots[i];
                 const distance = Math.sqrt((pacman.x - dot.x) ** 2 + (pacman.y - dot.y) ** 2);
-                if (distance < 15) {
+                if (distance < 10) {
                     dots.splice(i, 1);
                     score += 10;
                     scoreElement.textContent = score;
@@ -714,7 +766,7 @@
             for (let i = powerPellets.length - 1; i >= 0; i--) {
                 const pellet = powerPellets[i];
                 const distance = Math.sqrt((pacman.x - pellet.x) ** 2 + (pacman.y - pellet.y) ** 2);
-                if (distance < 20) {
+                if (distance < 12) {
                     powerPellets.splice(i, 1);
                     score += 50;
                     scoreElement.textContent = score;
@@ -726,7 +778,7 @@
             // Check ghost collisions
             ghosts.forEach(ghost => {
                 const distance = Math.sqrt((pacman.x - ghost.x) ** 2 + (pacman.y - ghost.y) ** 2);
-                if (distance < 20) {
+                if (distance < 12) {
                     if (powerMode) {
                         // Eat ghost
                         ghost.x = 13 * TILE_SIZE;
@@ -788,7 +840,7 @@
 
         // Share score
         function shareScore() {
-            const text = `I just scored ${score} on 🟦 BaseMan 👑! Can you beat my score? \n\nPlay now:`;
+            const text = `I just scored ${score} on 🟦 Base-Man 👑! Can you beat my score? \n\nPlay now:`;
             navigator.clipboard.writeText(text).then(() => {
                 alert("Score copied to clipboard! Share it on Warpcast or Twitter.");
             });
