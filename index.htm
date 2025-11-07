@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baseman - Base Pacman</title>
+    <title>BaseMan - Crypto Pac-Man</title>
     <style>
         * {
             margin: 0;
@@ -126,6 +126,13 @@
         .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
         .down { grid-column: 2; grid-row: 3; }
+        .crypto-theme {
+            background: rgba(0, 82, 255, 0.1);
+            border: 2px solid #00D1FF;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
 
         @media (max-width: 768px) {
             .mobile-controls {
@@ -135,7 +142,7 @@
     </style>
 </head>
 <body>
-    <h1>BASEMAN</h1>
+    <h1>🟦 BASEMAN 👑</h1>
     
     <div class="game-container">
         <canvas id="gameCanvas" width="560" height="620"></canvas>
@@ -144,7 +151,7 @@
             <div class="score-display">
                 SCORE: <span id="score">0</span> | 
                 LIVES: <span id="lives">3</span> |
-                HIGH SCORE: <span id="highScore">0</span>
+                HIGH: <span id="highScore">0</span>
             </div>
             <div class="controls">
                 <div class="mobile-controls">
@@ -157,20 +164,25 @@
         </div>
         
         <div id="gameStart" class="game-start">
-            <h2>WELCOME TO BASEMAN!</h2>
+            <h2>🟦 BASEMAN 👑</h2>
             <p class="instructions">
-                Use ARROW KEYS or touch controls to move Baseman.<br>
-                Collect all Base coins and avoid the ghosts!<br>
-                Power pellets make you temporarily invincible.
+                Use ARROW KEYS to move BaseMan<br>
+                Collect <span style="color: #00D1FF">Base coins</span> and avoid the chain ghosts!<br>
+                Power pellets make you temporarily invincible
             </p>
-            <button id="startButton">START GAME</button>
+            <div class="crypto-theme">
+                <strong>Chain Ghosts:</strong><br>
+                👻 ETH (Red) | 👻 SOL (Green)<br>
+                👻 ARB (Blue) | 👻 OP (Yellow)
+            </div>
+            <button id="startButton">START BUILDING</button>
         </div>
         
         <div id="gameOver" class="game-over hidden">
             <h2>GAME OVER</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
-            <button id="restartButton">PLAY AGAIN</button>
-            <button id="shareButton">SHARE SCORE</button>
+            <button id="restartButton">BUILD AGAIN</button>
+            <button id="shareButton">SHARE ONCHAIN</button>
         </div>
     </div>
 
@@ -188,7 +200,7 @@
         let score = 0;
         let lives = 3;
         let highScore = localStorage.getItem('basemanHighScore') || 0;
-        let pacman = { x: 0, y: 0, direction: 'right', nextDirection: 'right', speed: 2 };
+        let pacman = { x: 0, y: 0, direction: 'right', nextDirection: 'right', speed: 2, mouthOpen: 0, mouthSpeed: 0.1 };
         let ghosts = [];
         let dots = [];
         let powerPellets = [];
@@ -196,6 +208,14 @@
         let powerMode = false;
         let powerModeTimer = 0;
         const POWER_MODE_DURATION = 5000; // 5 seconds
+
+        // Chain ghosts data
+        const chainGhosts = [
+            { name: 'ETH', color: '#FF6B6B', symbol: 'Ξ' },
+            { name: 'SOL', color: '#00FF88', symbol: '◎' },
+            { name: 'ARB', color: '#00D1FF', symbol: '⟠' },
+            { name: 'OP', color: '#FFD93D', symbol: '⚌' }
+        ];
 
         // Maze layout (1 = wall, 0 = path, 2 = power pellet)
         const maze = [
@@ -329,18 +349,19 @@
                 }
             }
             
-            // Initialize Pacman
+            // Initialize BaseMan (Pac-Man with Base logo)
             pacman.x = 14 * TILE_SIZE;
             pacman.y = 23 * TILE_SIZE;
             pacman.direction = 'right';
             pacman.nextDirection = 'right';
+            pacman.mouthOpen = 0;
             
-            // Initialize ghosts
+            // Initialize chain ghosts
             ghosts = [
-                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', color: '#FF6B6B', speed: 1 },
-                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', color: '#00D1FF', speed: 1 },
-                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', color: '#FFD93D', speed: 1 },
-                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', color: '#6BCF7F', speed: 1 }
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', ...chainGhosts[0], speed: 1 },
+                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', ...chainGhosts[1], speed: 1 },
+                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', ...chainGhosts[2], speed: 1 },
+                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', ...chainGhosts[3], speed: 1 }
             ];
             
             // Update UI
@@ -356,7 +377,7 @@
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw maze
+            // Draw maze with Base theme
             drawMaze();
             
             // Update and draw game objects
@@ -386,43 +407,83 @@
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // Draw the maze
+        // Draw the maze with Base branding
         function drawMaze() {
             ctx.strokeStyle = '#0052FF';
             ctx.lineWidth = 2;
+            ctx.fillStyle = '#0052FF';
             
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
                     if (maze[y][x] === 1) {
-                        ctx.fillStyle = '#0052FF';
+                        // Draw Base-themed walls with gradient
+                        const gradient = ctx.createLinearGradient(
+                            x * TILE_SIZE, y * TILE_SIZE,
+                            (x + 1) * TILE_SIZE, (y + 1) * TILE_SIZE
+                        );
+                        gradient.addColorStop(0, '#0052FF');
+                        gradient.addColorStop(1, '#00D1FF');
+                        ctx.fillStyle = gradient;
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
         }
 
-        // Draw dots
+        // Draw Base coins (dots)
         function drawDots() {
-            ctx.fillStyle = '#FFFFFF';
+            ctx.fillStyle = '#00D1FF';
             dots.forEach(dot => {
+                // Create glowing Base coin effect
+                const gradient = ctx.createRadialGradient(
+                    dot.x, dot.y, 0,
+                    dot.x, dot.y, 4
+                );
+                gradient.addColorStop(0, '#FFFFFF');
+                gradient.addColorStop(0.7, '#00D1FF');
+                gradient.addColorStop(1, '#0052FF');
+                
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
+                ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
                 ctx.fill();
             });
         }
 
-        // Draw power pellets
+        // Draw power pellets (Base logo orbs)
         function drawPowerPellets() {
-            ctx.fillStyle = '#00D1FF';
             powerPellets.forEach(pellet => {
+                // Create glowing Base power pellet
+                const gradient = ctx.createRadialGradient(
+                    pellet.x, pellet.y, 0,
+                    pellet.x, pellet.y, 8
+                );
+                gradient.addColorStop(0, '#FFFFFF');
+                gradient.addColorStop(0.5, '#00D1FF');
+                gradient.addColorStop(1, '#0052FF');
+                
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
                 ctx.arc(pellet.x, pellet.y, 6, 0, Math.PI * 2);
                 ctx.fill();
+                
+                // Add pulsing effect
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(pellet.x, pellet.y, 8 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
+                ctx.stroke();
             });
         }
 
-        // Update Pacman position and direction
+        // Update BaseMan position and animation
         function updatePacman() {
+            // Animate mouth
+            pacman.mouthOpen += pacman.mouthSpeed;
+            if (pacman.mouthOpen > 1 || pacman.mouthOpen < 0) {
+                pacman.mouthSpeed *= -1;
+            }
+            
             // Try to change direction
             if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
                 pacman.direction = pacman.nextDirection;
@@ -453,11 +514,11 @@
                 pacman.x = -TILE_SIZE;
             }
             
-            // Draw Pacman (Base-themed)
+            // Draw BaseMan (Base logo with mouth)
             drawPacman();
         }
 
-        // Draw Pacman with Base theme
+        // Draw BaseMan as Base logo with animated mouth
         function drawPacman() {
             ctx.save();
             ctx.translate(pacman.x, pacman.y);
@@ -472,11 +533,23 @@
             }
             ctx.rotate(rotation);
             
-            // Draw Base-themed Pacman (blue/yellow)
-            ctx.fillStyle = powerMode ? '#00D1FF' : '#FFD93D';
+            // Draw BaseMan body (Base logo inspired)
+            const size = TILE_SIZE / 2 - 1;
+            const mouthAngle = Math.PI / 4 * pacman.mouthOpen;
+            
+            ctx.fillStyle = powerMode ? '#00D1FF' : '#FFD93D'; // Gold like Base logo
             ctx.beginPath();
-            ctx.arc(0, 0, TILE_SIZE / 2 - 1, Math.PI / 6, (Math.PI * 2) - Math.PI / 6);
+            ctx.arc(0, 0, size, mouthAngle, (Math.PI * 2) - mouthAngle);
             ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add Base logo crown detail
+            ctx.fillStyle = powerMode ? '#0052FF' : '#0052FF';
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.3, -size * 0.2);
+            ctx.lineTo(0, -size * 0.6);
+            ctx.lineTo(size * 0.3, -size * 0.2);
             ctx.closePath();
             ctx.fill();
             
@@ -518,30 +591,53 @@
             });
         }
 
-        // Draw a ghost
+        // Draw chain ghosts as crypto symbols
         function drawGhost(ghost) {
-            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
+            const size = TILE_SIZE / 2 - 2;
             
             // Ghost body
+            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
             ctx.beginPath();
-            ctx.arc(ghost.x, ghost.y, TILE_SIZE / 2 - 2, Math.PI, 0, false);
-            ctx.lineTo(ghost.x + TILE_SIZE / 2 - 2, ghost.y + TILE_SIZE / 2 - 2);
-            ctx.lineTo(ghost.x - TILE_SIZE / 2 + 2, ghost.y + TILE_SIZE / 2 - 2);
+            ctx.arc(ghost.x, ghost.y, size, Math.PI, 0, false);
+            ctx.lineTo(ghost.x + size, ghost.y + size);
+            ctx.lineTo(ghost.x - size, ghost.y + size);
             ctx.closePath();
             ctx.fill();
+            
+            // Ghost wavy bottom
+            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(ghost.x - size + i * size, ghost.y + size, 2, 0, Math.PI);
+                ctx.fill();
+            }
             
             // Ghost eyes
             ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
-            ctx.arc(ghost.x - 4, ghost.y - 2, 2, 0, Math.PI * 2);
-            ctx.arc(ghost.x + 4, ghost.y - 2, 2, 0, Math.PI * 2);
+            ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
+            ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
             ctx.fill();
             
             ctx.fillStyle = '#0000FF';
             ctx.beginPath();
-            ctx.arc(ghost.x - 4, ghost.y - 2, 1, 0, Math.PI * 2);
-            ctx.arc(ghost.x + 4, ghost.y - 2, 1, 0, Math.PI * 2);
+            ctx.arc(ghost.x - 3, ghost.y - 2, 1, 0, Math.PI * 2);
+            ctx.arc(ghost.x + 3, ghost.y - 2, 1, 0, Math.PI * 2);
             ctx.fill();
+            
+            // Draw chain symbol
+            ctx.fillStyle = '#000000';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(ghost.symbol, ghost.x, ghost.y + 8);
+            
+            // Draw chain name when powered
+            if (powerMode) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '8px Arial';
+                ctx.fillText(ghost.name, ghost.x, ghost.y - 10);
+            }
         }
 
         // Check if movement is possible
@@ -597,13 +693,13 @@
                 const distance = Math.sqrt((pacman.x - ghost.x) ** 2 + (pacman.y - ghost.y) ** 2);
                 if (distance < 15) {
                     if (powerMode) {
-                        // Eat ghost
+                        // Eat ghost - "Bridge to chain"
                         ghost.x = 13 * TILE_SIZE;
                         ghost.y = 11 * TILE_SIZE;
                         score += 200;
                         scoreElement.textContent = score;
                     } else {
-                        // Lose life
+                        // Lose life - "Rug pull"
                         lives--;
                         livesElement.textContent = lives;
                         
@@ -632,7 +728,6 @@
                 highScoreElement.textContent = highScore;
             }
             
-            // For now, just show game over with win message
             finalScoreElement.textContent = score;
             gameOverElement.querySelector('h2').textContent = 'LEVEL COMPLETE!';
             gameOverElement.classList.remove('hidden');
@@ -658,7 +753,7 @@
 
         // Share score
         function shareScore() {
-            const text = `I just scored ${score} on Baseman! Can you beat my score? 🎮\n\nPlay now:`;
+            const text = `I just scored ${score} on 🟦 BaseMan 👑! Can you beat my score? \n\nPlay now:`;
             navigator.clipboard.writeText(text).then(() => {
                 alert("Score copied to clipboard! Share it on Warpcast or Twitter.");
             });
