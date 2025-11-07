@@ -1,101 +1,671 @@
-<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><title>BASE-MAN</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#0A0B0D;overflow:hidden;font-family:system-ui,-apple-system}
-  #load{position:fixed;top:0;left:0;width:100%;height:100%;background:#0A0B0D;color:#00D1FF;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
-  #title{font:bold 68px system-ui;letter-spacing:2px;text-shadow:0 0 30px #0052FF;animation:p 2s infinite}
-  @keyframes p{50%{text-shadow:0 0 50px #00D1FF}}
-  #bar{width:280px;height:16px;background:#222;border:1px solid #0052FF;border-radius:8px;overflow:hidden;margin-top:20px}
-  #fill{width:0%;height:100%;background:linear-gradient(90deg,#0052FF,#00D1FF);transition:width .4s}
-  .btn{background:#0052FF;color:white;padding:14px 28px;margin:8px;border-radius:50px;
-    font:bold 19px system-ui;box-shadow:0 6px 20px #0052FF44;backdrop-filter:blur(10px);cursor:pointer}
-  #menu{position:fixed;top:16px;right:16px;z-index:100;display:flex;gap:8px;flex-wrap:wrap}
-  canvas{display:none;image-rendering:pixelated}
-  #how, #over{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(10,11,13,0.95);color:#00D1FF;padding:30px;border-radius:20px;
-    text-align:center;max-width:90%;box-shadow:0 0 40px #0052FF}
-</style>
-</head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseman - Base Pacman</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #0052FF 0%, #00D1FF 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        .game-container {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .score-display {
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .game-over, .game-start {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        button {
+            background: #0052FF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        button:hover {
+            background: #0040CC;
+            transform: translateY(-2px);
+        }
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .instructions {
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .mobile-controls {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 200px;
+            height: 200px;
+        }
+        .mobile-controls button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
 
-<div id="load"><div id="title">BASE-MAN</div><div id="bar"><div id="fill"></div></div></div>
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: grid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>BASEMAN</h1>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="560" height="620"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="score-display">
+                SCORE: <span id="score">0</span> | 
+                LIVES: <span id="lives">3</span> |
+                HIGH SCORE: <span id="highScore">0</span>
+            </div>
+            <div class="controls">
+                <div class="mobile-controls">
+                    <button class="up" onclick="moveUp()">↑</button>
+                    <button class="left" onclick="moveLeft()">←</button>
+                    <button class="right" onclick="moveRight()">→</button>
+                    <button class="down" onclick="moveDown()">↓</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameStart" class="game-start">
+            <h2>WELCOME TO BASEMAN!</h2>
+            <p class="instructions">
+                Use ARROW KEYS or touch controls to move Baseman.<br>
+                Collect all Base coins and avoid the ghosts!<br>
+                Power pellets make you temporarily invincible.
+            </p>
+            <button id="startButton">START GAME</button>
+        </div>
+        
+        <div id="gameOver" class="game-over hidden">
+            <h2>GAME OVER</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button id="restartButton">PLAY AGAIN</button>
+            <button id="shareButton">SHARE SCORE</button>
+        </div>
+    </div>
 
-<div id="menu">
-  <button class="btn" id="s">START</button>
-  <button class="btn" id="h">HOW</button>
-  <button class="btn" id="l">TOP</button>
-</div>
+    <script>
+        // Game constants
+        const TILE_SIZE = 20;
+        const CANVAS_WIDTH = 560;
+        const CANVAS_HEIGHT = 620;
+        const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
+        const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
 
-<canvas id="c" width="448" height="496"></canvas>
+        // Game variables
+        let canvas, ctx;
+        let gameActive = false;
+        let score = 0;
+        let lives = 3;
+        let highScore = localStorage.getItem('basemanHighScore') || 0;
+        let pacman = { x: 0, y: 0, direction: 'right', nextDirection: 'right', speed: 2 };
+        let ghosts = [];
+        let dots = [];
+        let powerPellets = [];
+        let animationId;
+        let powerMode = false;
+        let powerModeTimer = 0;
+        const POWER_MODE_DURATION = 5000; // 5 seconds
 
-<div id="how"><h2>SWIPE TO BATCH TXs</h2>
-<p>Eat every blue orb</p>
-<p>Eat big orb → swallow rival chains!</p>
-<p>15,000 pts = FREE WHITELIST NFT</p>
-<button class="btn" onclick="this.parentElement.style.display='none'">GO</button></div>
+        // Maze layout (1 = wall, 0 = path, 2 = power pellet)
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,2,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
 
-<div id="over"><h2 id="final"></h2>
-<button class="btn" id="claim">CLAIM NFT</button>
-<button class="btn" onclick="location.reload()">PLAY AGAIN</button></div>
+        // DOM elements
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const highScoreElement = document.getElementById('highScore');
+        const finalScoreElement = document.getElementById('finalScore');
+        const gameStartElement = document.getElementById('gameStart');
+        const gameOverElement = document.getElementById('gameOver');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const shareButton = document.getElementById('shareButton');
 
-<script src="https://cdn.ethers.io/lib/ethers-6.13.2.umd.min.js"></script>
-<script>
-// Loading
-let p=0; const f=document.getElementById('fill');
-const i=setInterval(()=>{p+=10;f.style.width=p+'%';if(p>=100){clearInterval(i);document.getElementById('load').style.display='none';}},90);
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set high score display
+            highScoreElement.textContent = highScore;
+            
+            // Add event listeners
+            setupEventListeners();
+            
+            // Initialize game state
+            resetGame();
+        }
 
-// Buttons
-document.getElementById('s').onclick=()=>{document.getElementById('c').style.display='block';document.getElementById('menu').style.display='none';start();}
-document.getElementById('h').onclick=()=>{document.getElementById('how').style.display='block';}
-document.getElementById('l').onclick=()=>{alert("@base LEADERBOARD\n1. @you 28,400\n2. @base2 25,100\n3. @base3 22,000");}
+        // Set up event listeners
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Game control buttons
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+            shareButton.addEventListener('click', shareScore);
+        }
 
-// Game
-const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let score=0,lives=3,level=1,scared=0,particles=[];
-const baseMan=new Image(); baseMan.src='https://cryptologos.cc/logos/base-base-logo.png';
-const ghosts=[new Image(),new Image(),new Image(),new Image()];
-ghosts[0].src='https://cryptologos.cc/logos/ethereum-eth-logo.png';
-ghosts[1].src='https://cryptologos.cc/logos/solana-sol-logo.png';
-ghosts[2].src='https://cryptologos.cc/logos/arbitrum-arb-logo.png';
-ghosts[3].src='https://cryptologos.cc/logos/optimism-ethereum-op-logo.png';
+        // Handle keyboard input
+        function handleKeyPress(e) {
+            if (!gameActive) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    pacman.nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                    pacman.nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                    pacman.nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                    pacman.nextDirection = 'right';
+                    break;
+            }
+        }
 
-const maze=[...]; // (same 15-line maze – copy from previous reply)
-let player={x:9,y:11,dir:0,m:0}, dots=[], power=[], g=[];
+        // Mobile controls
+        function moveUp() { if (gameActive) pacman.nextDirection = 'up'; }
+        function moveDown() { if (gameActive) pacman.nextDirection = 'down'; }
+        function moveLeft() { if (gameActive) pacman.nextDirection = 'left'; }
+        function moveRight() { if (gameActive) pacman.nextDirection = 'right'; }
 
-// Paste FULL GAME CODE from my last reply (init, loop, AI, particles, hex walls, etc.)
-// ———— QUICK COPY ————
-function init(){/* same as before */} function loop(){/* same as before */} start();
-// ———— END COPY ————
+        // Start the game
+        function startGame() {
+            gameActive = true;
+            resetGame();
+            gameStartElement.classList.add('hidden');
+            gameOverElement.classList.add('hidden');
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            gameLoop();
+        }
 
-// NFT Claim (FIRST 100 ONLY)
-document.getElementById('claim').onclick=async()=>{
-  if(score<15000)return alert("Need 15,000 pts!");
-  if(!window.ethereum)return alert("Open in Warpcast → MetaMask");
-  const provider=new ethers.BrowserProvider(window.ethereum);
-  const signer=await provider.getSigner();
-  const addr=await signer.getAddress();
-  const msg=`BASE-MAN ${score}`;
-  const sig=await signer.signMessage(msg);
-  // Real contract call (replace with your address)
-  alert(`Signed! NFT #${Math.floor(Math.random()*100)} minted to ${addr.slice(0,8)}...`);
-  share();
-};
+        // Reset game state
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            powerMode = false;
+            powerModeTimer = 0;
+            
+            // Initialize dots and power pellets
+            dots = [];
+            powerPellets = [];
+            
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    if (maze[y][x] === 0) {
+                        dots.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
+                    } else if (maze[y][x] === 2) {
+                        powerPellets.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
+                    }
+                }
+            }
+            
+            // Initialize Pacman
+            pacman.x = 14 * TILE_SIZE;
+            pacman.y = 23 * TILE_SIZE;
+            pacman.direction = 'right';
+            pacman.nextDirection = 'right';
+            
+            // Initialize ghosts
+            ghosts = [
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'left', color: '#FF6B6B', speed: 1 },
+                { x: 14 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'up', color: '#00D1FF', speed: 1 },
+                { x: 15 * TILE_SIZE, y: 11 * TILE_SIZE, direction: 'right', color: '#FFD93D', speed: 1 },
+                { x: 13 * TILE_SIZE, y: 14 * TILE_SIZE, direction: 'left', color: '#6BCF7F', speed: 1 }
+            ];
+            
+            // Update UI
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+        }
 
-function share(){
-  const t=`I batched ${score} TXs in BASE-MAN! @base whitelist secured\n`;
-  window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(t)}&embeds[]=${encodeURIComponent(location.href)}`,'_blank');
-}
+        // Game loop
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw maze
+            drawMaze();
+            
+            // Update and draw game objects
+            updatePacman();
+            updateGhosts();
+            drawDots();
+            drawPowerPellets();
+            
+            // Check collisions
+            checkCollisions();
+            
+            // Update power mode
+            if (powerMode) {
+                powerModeTimer--;
+                if (powerModeTimer <= 0) {
+                    powerMode = false;
+                }
+            }
+            
+            // Check win condition
+            if (dots.length === 0 && powerPellets.length === 0) {
+                levelComplete();
+                return;
+            }
+            
+            // Continue game loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
 
-// Swipe
-let sx,sy;
-canvas.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;navigator.vibrate?.(20);});
-canvas.addEventListener('touchend',e=>{
-  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-  if(Math.abs(dx)>Math.abs(dy))player.dir=dx>0?0:2;
-  else player.dir=dy>0?1:3;
-  navigator.vibrate?.(30);
-});
-</script>
-</body></html>
+        // Draw the maze
+        function drawMaze() {
+            ctx.strokeStyle = '#0052FF';
+            ctx.lineWidth = 2;
+            
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillStyle = '#0052FF';
+                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+
+        // Draw dots
+        function drawDots() {
+            ctx.fillStyle = '#FFFFFF';
+            dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Draw power pellets
+        function drawPowerPellets() {
+            ctx.fillStyle = '#00D1FF';
+            powerPellets.forEach(pellet => {
+                ctx.beginPath();
+                ctx.arc(pellet.x, pellet.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Update Pacman position and direction
+        function updatePacman() {
+            // Try to change direction
+            if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
+                pacman.direction = pacman.nextDirection;
+            }
+            
+            // Move in current direction if possible
+            if (canMove(pacman.x, pacman.y, pacman.direction)) {
+                switch(pacman.direction) {
+                    case 'up':
+                        pacman.y -= pacman.speed;
+                        break;
+                    case 'down':
+                        pacman.y += pacman.speed;
+                        break;
+                    case 'left':
+                        pacman.x -= pacman.speed;
+                        break;
+                    case 'right':
+                        pacman.x += pacman.speed;
+                        break;
+                }
+            }
+            
+            // Handle tunnel wrapping
+            if (pacman.x < -TILE_SIZE) {
+                pacman.x = CANVAS_WIDTH;
+            } else if (pacman.x > CANVAS_WIDTH) {
+                pacman.x = -TILE_SIZE;
+            }
+            
+            // Draw Pacman (Base-themed)
+            drawPacman();
+        }
+
+        // Draw Pacman with Base theme
+        function drawPacman() {
+            ctx.save();
+            ctx.translate(pacman.x, pacman.y);
+            
+            // Rotate based on direction
+            let rotation = 0;
+            switch(pacman.direction) {
+                case 'up': rotation = -Math.PI / 2; break;
+                case 'down': rotation = Math.PI / 2; break;
+                case 'left': rotation = Math.PI; break;
+                case 'right': rotation = 0; break;
+            }
+            ctx.rotate(rotation);
+            
+            // Draw Base-themed Pacman (blue/yellow)
+            ctx.fillStyle = powerMode ? '#00D1FF' : '#FFD93D';
+            ctx.beginPath();
+            ctx.arc(0, 0, TILE_SIZE / 2 - 1, Math.PI / 6, (Math.PI * 2) - Math.PI / 6);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        // Update ghost positions and AI
+        function updateGhosts() {
+            ghosts.forEach(ghost => {
+                // Simple ghost AI - random movement with basic chasing
+                if (Math.random() < 0.02 || !canMove(ghost.x, ghost.y, ghost.direction)) {
+                    const directions = ['up', 'down', 'left', 'right'];
+                    const validDirections = directions.filter(dir => canMove(ghost.x, ghost.y, dir));
+                    if (validDirections.length > 0) {
+                        ghost.direction = validDirections[Math.floor(Math.random() * validDirections.length)];
+                    }
+                }
+                
+                // Move ghost
+                if (canMove(ghost.x, ghost.y, ghost.direction)) {
+                    const speed = powerMode ? ghost.speed * 0.5 : ghost.speed;
+                    switch(ghost.direction) {
+                        case 'up': ghost.y -= speed; break;
+                        case 'down': ghost.y += speed; break;
+                        case 'left': ghost.x -= speed; break;
+                        case 'right': ghost.x += speed; break;
+                    }
+                }
+                
+                // Handle tunnel wrapping
+                if (ghost.x < -TILE_SIZE) {
+                    ghost.x = CANVAS_WIDTH;
+                } else if (ghost.x > CANVAS_WIDTH) {
+                    ghost.x = -TILE_SIZE;
+                }
+                
+                // Draw ghost
+                drawGhost(ghost);
+            });
+        }
+
+        // Draw a ghost
+        function drawGhost(ghost) {
+            ctx.fillStyle = powerMode ? '#0052FF' : ghost.color;
+            
+            // Ghost body
+            ctx.beginPath();
+            ctx.arc(ghost.x, ghost.y, TILE_SIZE / 2 - 2, Math.PI, 0, false);
+            ctx.lineTo(ghost.x + TILE_SIZE / 2 - 2, ghost.y + TILE_SIZE / 2 - 2);
+            ctx.lineTo(ghost.x - TILE_SIZE / 2 + 2, ghost.y + TILE_SIZE / 2 - 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Ghost eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(ghost.x - 4, ghost.y - 2, 2, 0, Math.PI * 2);
+            ctx.arc(ghost.x + 4, ghost.y - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#0000FF';
+            ctx.beginPath();
+            ctx.arc(ghost.x - 4, ghost.y - 2, 1, 0, Math.PI * 2);
+            ctx.arc(ghost.x + 4, ghost.y - 2, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Check if movement is possible
+        function canMove(x, y, direction) {
+            let newX = x;
+            let newY = y;
+            
+            switch(direction) {
+                case 'up': newY -= TILE_SIZE / 2; break;
+                case 'down': newY += TILE_SIZE / 2; break;
+                case 'left': newX -= TILE_SIZE / 2; break;
+                case 'right': newX += TILE_SIZE / 2; break;
+            }
+            
+            // Convert to grid coordinates
+            const gridX = Math.floor(newX / TILE_SIZE);
+            const gridY = Math.floor(newY / TILE_SIZE);
+            
+            // Check if within bounds and not a wall
+            return gridX >= 0 && gridX < GRID_WIDTH && 
+                   gridY >= 0 && gridY < GRID_HEIGHT &&
+                   maze[gridY][gridX] !== 1;
+        }
+
+        // Check for collisions
+        function checkCollisions() {
+            // Check dot collisions
+            for (let i = dots.length - 1; i >= 0; i--) {
+                const dot = dots[i];
+                const distance = Math.sqrt((pacman.x - dot.x) ** 2 + (pacman.y - dot.y) ** 2);
+                if (distance < 10) {
+                    dots.splice(i, 1);
+                    score += 10;
+                    scoreElement.textContent = score;
+                }
+            }
+            
+            // Check power pellet collisions
+            for (let i = powerPellets.length - 1; i >= 0; i--) {
+                const pellet = powerPellets[i];
+                const distance = Math.sqrt((pacman.x - pellet.x) ** 2 + (pacman.y - pellet.y) ** 2);
+                if (distance < 12) {
+                    powerPellets.splice(i, 1);
+                    score += 50;
+                    scoreElement.textContent = score;
+                    powerMode = true;
+                    powerModeTimer = POWER_MODE_DURATION;
+                }
+            }
+            
+            // Check ghost collisions
+            ghosts.forEach(ghost => {
+                const distance = Math.sqrt((pacman.x - ghost.x) ** 2 + (pacman.y - ghost.y) ** 2);
+                if (distance < 15) {
+                    if (powerMode) {
+                        // Eat ghost
+                        ghost.x = 13 * TILE_SIZE;
+                        ghost.y = 11 * TILE_SIZE;
+                        score += 200;
+                        scoreElement.textContent = score;
+                    } else {
+                        // Lose life
+                        lives--;
+                        livesElement.textContent = lives;
+                        
+                        if (lives <= 0) {
+                            gameOver();
+                        } else {
+                            // Reset positions
+                            pacman.x = 14 * TILE_SIZE;
+                            pacman.y = 23 * TILE_SIZE;
+                            pacman.direction = 'right';
+                            pacman.nextDirection = 'right';
+                        }
+                    }
+                }
+            });
+        }
+
+        // Level complete
+        function levelComplete() {
+            score += 1000; // Level completion bonus
+            scoreElement.textContent = score;
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('basemanHighScore', highScore);
+                highScoreElement.textContent = highScore;
+            }
+            
+            // For now, just show game over with win message
+            finalScoreElement.textContent = score;
+            gameOverElement.querySelector('h2').textContent = 'LEVEL COMPLETE!';
+            gameOverElement.classList.remove('hidden');
+            gameActive = false;
+        }
+
+        // Game over
+        function gameOver() {
+            gameActive = false;
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('basemanHighScore', highScore);
+                highScoreElement.textContent = highScore;
+            }
+            
+            finalScoreElement.textContent = score;
+            gameOverElement.querySelector('h2').textContent = 'GAME OVER';
+            gameOverElement.classList.remove('hidden');
+            
+            cancelAnimationFrame(animationId);
+        }
+
+        // Share score
+        function shareScore() {
+            const text = `I just scored ${score} on Baseman! Can you beat my score? 🎮\n\nPlay now:`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Score copied to clipboard! Share it on Warpcast or Twitter.");
+            });
+        }
+
+        // Initialize the game when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
