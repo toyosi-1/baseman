@@ -5,67 +5,91 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>BLUE MAN - Playable</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0A0B0D;color:#00D1FF;font-family:'Courier New',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.container{width:560px;position:relative}
-canvas{display:block;background:#000;border:4px solid #0052FF;border-radius:8px;box-shadow:0 0 40px #0052FF;image-rendering:pixelated}
-.hud{display:flex;justify-content:space-between;align-items:center;margin-top:12px;background:rgba(0,82,255,0.06);padding:8px;border-radius:6px;border:1px solid rgba(0,82,255,0.12)}
-.hud div{font-weight:700}
-.panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.overlay{position:relative}
-.center-panel{background:rgba(10,11,13,0.95);padding:18px;border-radius:8px;text-align:center;color:#fff}
-button{background:linear-gradient(45deg,#0052FF,#00D1FF);border:none;padding:10px 16px;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}
-.hidden{display:none}
-.powerbar{width:120px;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative}
-.powerbar>i{display:block;height:100%;background:linear-gradient(90deg,#00D1FF,#88FFFF);width:0%;transition:width 0.1s linear}
-.powerbar.flash>i{animation:flash 0.4s infinite alternate}
-@keyframes flash{from{opacity:1;}to{opacity:0.3;}}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#0A0B0D;
+    color:#00D1FF;
+    font-family:'Courier New',monospace;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:20px;
+  }
+  .container{width:560px;position:relative}
+  canvas{
+    display:block;
+    background:#000;
+    border:4px solid #0052FF;
+    border-radius:8px;
+    box-shadow:0 0 40px #0052FF;
+    image-rendering:pixelated;
+  }
+  .hud{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:12px;
+    background:rgba(0,82,255,0.06);
+    padding:8px;
+    border-radius:6px;
+    border:1px solid rgba(0,82,255,0.12);
+  }
+  .hud div{font-weight:700}
+  .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .center-panel{background:rgba(10,11,13,0.95);padding:18px;border-radius:8px;text-align:center;color:#fff}
+  button{background:linear-gradient(45deg,#0052FF,#00D1FF);border:none;padding:10px 16px;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}
+  .hidden{display:none}
+  .powerbar{width:120px;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative}
+  .powerbar>i{display:block;height:100%;background:linear-gradient(90deg,#00D1FF,#88FFFF);width:0%;transition:width 0.1s linear}
+  .powerbar.flash>i{animation:flash 0.4s infinite alternate}
+  @keyframes flash{from{opacity:1;}to{opacity:0.3;}}
 </style>
 </head>
 <body>
-<div class="container">
-  <canvas id="gameCanvas" width="560" height="620"></canvas>
+  <div class="container">
+    <canvas id="gameCanvas" width="560" height="620"></canvas>
 
-  <div id="gameStart" class="panel">
-    <div class="center-panel">
-      <h2>🟦 BLUE MAN</h2>
-      <p style="max-width:320px;margin:8px auto">Arrow keys to move. Collect TX Orbs. Eat ghosts with Power Pellets.</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-        <button id="startButton">START GAME</button>
+    <div id="gameStart" class="panel">
+      <div class="center-panel">
+        <h2>🟦 BLUE MAN</h2>
+        <p style="max-width:320px;margin:8px auto">Arrow keys to move. Collect TX Orbs. Eat ghosts with Power Pellets.</p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button id="startButton">START GAME</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="gameOver" class="panel hidden">
-    <div class="center-panel">
-      <h2 id="gameOverTitle">GAME OVER</h2>
-      <p>Final Score: <strong id="finalScore">0</strong></p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-        <button id="restartButton">PLAY AGAIN</button>
+    <div id="gameOver" class="panel hidden">
+      <div class="center-panel">
+        <h2 id="gameOverTitle">GAME OVER</h2>
+        <p>Final Score: <strong id="finalScore">0</strong></p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button id="restartButton">PLAY AGAIN</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="hud">
-    <div>SCORE: <span id="score">0</span></div>
-    <div>LIVES: <span id="lives">3</span></div>
-    <div>HIGH: <span id="highScore">0</span></div>
-    <div style="display:flex;align-items:center;gap:8px">POWER 
-      <div class="powerbar" aria-hidden="true"><i id="powerFill"></i></div>
+    <div class="hud">
+      <div>SCORE: <span id="score">0</span></div>
+      <div>LIVES: <span id="lives">3</span></div>
+      <div>HIGH: <span id="highScore">0</span></div>
+      <div style="display:flex;align-items:center;gap:8px">POWER <div class="powerbar" aria-hidden="true"><i id="powerFill"></i></div></div>
     </div>
   </div>
-</div>
 
 <script>
+/* ===== CONFIG ===== */
 const TILE_SIZE = 20;
 const CANVAS_WIDTH = 560;
 const CANVAS_HEIGHT = 620;
-const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
-const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
 const PACMAN_SPEED = 3;
 const GHOST_SPEED = 1.5;
-const POWER_MODE_DURATION_FRAMES = 300; // ~5s
+const POWER_MODE_DURATION_FRAMES = 300; // ~5s at 60fps
+const GHOST_SCATTER_DURATION = 300; // frames
+const GHOST_CHASE_DURATION = 600; // frames
 
+/* ===== STATE ===== */
 let canvas, ctx;
 let animationId = null;
 let gameActive = false;
@@ -75,13 +99,13 @@ let highScore = parseInt(localStorage.getItem('BlueManHighScore')) || 0;
 let powerMode = false;
 let powerTimer = 0;
 
-let pacman = { x:0,y:0,direction:'right',nextDirection:'right',speed:PACMAN_SPEED,mouthOpen:0,mouthDir:1 };
+let pacman = { x:0, y:0, direction:'right', nextDirection:'right', speed:PACMAN_SPEED, mouthOpen:0, mouthDir:1 };
 let ghosts = [];
 let dots = [];
 let powerPellets = [];
 let walls = [];
 
-// Maze layout (0=dot,1=wall,2=power pellet)
+/* ===== MAZE (0 dot, 1 wall, 2 power pellet) ===== */
 const maze = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -116,35 +140,76 @@ const maze = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
-// Helpers
+/* ===== HELPERS ===== */
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function hypot(a,b){ return Math.hypot(a,b); }
 function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
 
-// Drawing
+/* ===== DRAW ===== */
 function drawHex(x,y){ ctx.fillStyle='#0052FF'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE); ctx.strokeStyle='#00D1FF'; ctx.lineWidth=2; ctx.strokeRect(x,y,TILE_SIZE,TILE_SIZE); }
 function drawDot(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,3,0,Math.PI*2); ctx.fill(); }
 function drawPower(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,6,0,Math.PI*2); ctx.fill(); }
-function drawPacman(x,y,dir,mouthOpen){ const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; ctx.fillStyle='#0052FF'; ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fill(); let start=0,end=0; const ms=0.2+mouthOpen*0.6; switch(dir){case 'right': start=ms; end=Math.PI*2-ms; break;case 'left': start=Math.PI-ms; end=Math.PI+ms; break;case 'up': start=Math.PI*1.5-ms; end=Math.PI*1.5+ms; break;case 'down': start=Math.PI*0.5-ms; end=Math.PI*0.5+ms; break;} ctx.fillStyle='#0A0B0D'; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,8,start,end); ctx.closePath(); ctx.fill(); }
-function drawGhost(x,y,index,state){ const colors=['#FF4444','#00FF88','#00D1FF','#FFAA00']; const syms=['Ξ','◎','⟠','⚌']; const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; ctx.fillStyle = (state==='vulnerable') ? '#0052FF' : colors[index % colors.length]; ctx.beginPath(); ctx.arc(cx,cy-2,7,Math.PI,0,false); ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5); ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill(); ctx.fillStyle=(state==='vulnerable')? '#0000FF':'#000000'; ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000000'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(syms[index%syms.length],cx,cy+4); }
+function drawBlueMan(x,y,dir,mouthOpen){
+  const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2;
+  ctx.fillStyle='#0052FF';
+  ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fill();
+  let start=0,end=0; const ms=0.2 + mouthOpen*0.6;
+  switch(dir){
+    case 'right': start=ms; end=Math.PI*2-ms; break;
+    case 'left': start=Math.PI-ms; end=Math.PI+ms; break;
+    case 'up': start=Math.PI*1.5-ms; end=Math.PI*1.5+ms; break;
+    case 'down': start=Math.PI*0.5-ms; end=Math.PI*0.5+ms; break;
+  }
+  ctx.fillStyle='#0A0B0D';
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,8,start,end); ctx.closePath(); ctx.fill();
+}
+function drawGhost(x,y,index,state){
+  const colors=['#FF4444','#00FF88','#00D1FF','#FFAA00'];
+  const syms=['Ξ','◎','⟠','⚌'];
+  const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2;
+  ctx.fillStyle = (state==='vulnerable') ? '#0052FF' : colors[index % colors.length];
+  ctx.beginPath();
+  ctx.arc(cx,cy-2,7,Math.PI,0,false);
+  ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5);
+  ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#FFFFFF';
+  ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=(state==='vulnerable')? '#0000FF':'#000000';
+  ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000000'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(syms[index%syms.length], cx, cy+4);
+}
 
-// Initialization
+/* ===== INIT ===== */
 function init(){
   canvas = document.getElementById('gameCanvas');
   ctx = canvas.getContext('2d');
   document.getElementById('highScore').textContent = highScore;
   setupEventListeners();
-  resetGame();
+  // show start screen only; game loop begins when player presses START
+  drawStatic(); // draws the initial static maze so canvas doesn't look empty
 }
 
 function setupEventListeners(){
-  document.addEventListener('keydown', handleKeyPress);
   document.getElementById('startButton').addEventListener('click', startGame);
   document.getElementById('restartButton').addEventListener('click', startGame);
+  document.addEventListener('keydown', handleKeyPress);
 }
 
-function handleKeyPress(e){ if(!gameActive) return; switch(e.key){ case 'ArrowUp': pacman.nextDirection='up'; break; case 'ArrowDown': pacman.nextDirection='down'; break; case 'ArrowLeft': pacman.nextDirection='left'; break; case 'ArrowRight': pacman.nextDirection='right'; break; }}
+/* Draw static maze (used initially to avoid blank canvas) */
+function drawStatic(){
+  ctx.fillStyle='#0A0B0D'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // draw walls only from the maze for preview
+  for(let y=0;y<maze.length;y++){
+    for(let x=0;x<maze[y].length;x++){
+      if(maze[y][x] === 1) drawHex(x*TILE_SIZE, y*TILE_SIZE);
+    }
+  }
+}
 
+/* ===== GAME CONTROL ===== */
 function startGame(){
+  // initialize and run
   gameActive = true;
   document.getElementById('gameStart').classList.add('hidden');
   document.getElementById('gameOver').classList.add('hidden');
@@ -153,10 +218,372 @@ function startGame(){
   gameLoop();
 }
 
-// (ResetGame, gameLoop, updatePacman, canMove, updateGhosts, canMoveGhost, checkCollisions, enterPowerMode, updatePowerBar, loseLife, levelComplete, gameOver remain same as previous fix)
-// Please copy the full previous code for these functions including the updated updatePowerBar function with flashing
-// To save space here, we have implemented the updated power bar and ghost respawn in the main code above
+function resetGame(){
+  // reset state arrays
+  score = 0;
+  lives = 3;
+  powerMode = false;
+  powerTimer = 0;
+  dots = [];
+  powerPellets = [];
+  walls = [];
 
+  for(let y=0;y<maze.length;y++){
+    for(let x=0;x<maze[y].length;x++){
+      const v = maze[y][x];
+      if(v === 0) dots.push({x: x*TILE_SIZE, y: y*TILE_SIZE});
+      else if(v === 2) powerPellets.push({x: x*TILE_SIZE, y: y*TILE_SIZE});
+      else if(v === 1) walls.push({x: x*TILE_SIZE, y: y*TILE_SIZE});
+    }
+  }
+
+  // Blue Man start
+  pacman.x = 14 * TILE_SIZE;
+  pacman.y = 23 * TILE_SIZE;
+  pacman.direction = 'right';
+  pacman.nextDirection = 'right';
+  pacman.mouthOpen = 0;
+  pacman.mouthDir = 1;
+
+  // Initialize ghosts with scatter mode and timers
+  ghosts = [
+    {x:13*TILE_SIZE,y:11*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
+    {x:14*TILE_SIZE,y:11*TILE_SIZE,direction:'up',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
+    {x:15*TILE_SIZE,y:11*TILE_SIZE,direction:'right',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
+    {x:13*TILE_SIZE,y:14*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION}
+  ];
+
+  updateHUD();
+  document.getElementById('powerFill').style.width = '0%';
+}
+
+/* ===== INPUT ===== */
+function handleKeyPress(e){
+  if(!gameActive) return;
+  switch(e.key){
+    case 'ArrowUp': pacman.nextDirection = 'up'; break;
+    case 'ArrowDown': pacman.nextDirection = 'down'; break;
+    case 'ArrowLeft': pacman.nextDirection = 'left'; break;
+    case 'ArrowRight': pacman.nextDirection = 'right'; break;
+  }
+}
+
+/* ===== HUD ===== */
+function updateHUD(){
+  document.getElementById('score').textContent = score;
+  document.getElementById('lives').textContent = lives;
+  document.getElementById('highScore').textContent = highScore;
+}
+
+/* ===== GAME LOOP ===== */
+function gameLoop(){
+  if(!gameActive) return;
+  // clear
+  ctx.fillStyle = '#0A0B0D';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // draw static
+  walls.forEach(w => drawHex(w.x, w.y));
+  dots.forEach(d => drawDot(d.x, d.y));
+  powerPellets.forEach(p => drawPower(p.x, p.y));
+
+  // update + draw characters
+  updatePacman();
+  updateGhosts();
+
+  // collisions
+  checkCollisions();
+
+  // power bar
+  updatePowerBar();
+
+  if(dots.length === 0 && powerPellets.length === 0){
+    levelComplete();
+    return;
+  }
+
+  animationId = requestAnimationFrame(gameLoop);
+}
+
+/* ===== MOVEMENT & COLLISION HELPERS ===== */
+function canMove(x,y,direction,speed){
+  let nx = x, ny = y;
+  switch(direction){
+    case 'up': ny -= speed; break;
+    case 'down': ny += speed; break;
+    case 'left': nx -= speed; break;
+    case 'right': nx += speed; break;
+  }
+  const corners = [
+    {x: nx + 2, y: ny + 2},
+    {x: nx + TILE_SIZE - 2, y: ny + 2},
+    {x: nx + 2, y: ny + TILE_SIZE - 2},
+    {x: nx + TILE_SIZE - 2, y: ny + TILE_SIZE - 2}
+  ];
+  for(const c of corners){
+    const gx = Math.floor(c.x / TILE_SIZE);
+    const gy = Math.floor(c.y / TILE_SIZE);
+    if(gx < 0 || gx >= GRID_WIDTH || gy < 0 || gy >= GRID_HEIGHT) continue;
+    if(maze[gy][gx] === 1) return false;
+  }
+  return true;
+}
+
+/* ===== PACMAN UPDATE ===== */
+function updatePacman(){
+  // mouth anim
+  pacman.mouthOpen += 0.12 * pacman.mouthDir;
+  if(pacman.mouthOpen >= 1 || pacman.mouthOpen <= 0) pacman.mouthDir *= -1;
+
+  // change dir if possible
+  if(canMove(pacman.x, pacman.y, pacman.nextDirection, pacman.speed)) pacman.direction = pacman.nextDirection;
+
+  // move
+  if(canMove(pacman.x, pacman.y, pacman.direction, pacman.speed)){
+    switch(pacman.direction){
+      case 'up': pacman.y -= pacman.speed; break;
+      case 'down': pacman.y += pacman.speed; break;
+      case 'left': pacman.x -= pacman.speed; break;
+      case 'right': pacman.x += pacman.speed; break;
+    }
+  }
+
+  // tunnel wrap
+  if(pacman.x < -TILE_SIZE) pacman.x = CANVAS_WIDTH;
+  else if(pacman.x > CANVAS_WIDTH) pacman.x = -TILE_SIZE;
+
+  drawBlueMan(pacman.x, pacman.y, pacman.direction, pacman.mouthOpen);
+}
+
+/* ===== GHOSTS: modes + AI + respawn ===== */
+function updateGhosts(){
+  ghosts.forEach((g,idx) => {
+    // If eaten: move toward lair gradually until reached and then respawn into normal scatter
+    if(g.state === 'eaten'){
+      if(g.respawnTimer > 0){
+        g.respawnTimer--;
+      } else {
+        // move to lair gradually
+        const lairX = 13*TILE_SIZE + (idx % 2) * TILE_SIZE;
+        const lairY = (idx === 3 ? 14 : 11) * TILE_SIZE;
+        const dx = lairX - g.x;
+        const dy = lairY - g.y;
+        const d = Math.hypot(dx, dy);
+        const step = Math.min(g.speed, d);
+        if(d > 1){
+          g.x += (dx / d) * step;
+          g.y += (dy / d) * step;
+          drawGhost(g.x, g.y, idx, true);
+          return;
+        } else {
+          g.x = lairX; g.y = lairY;
+          g.state = 'normal';
+          g.mode = 'scatter';
+          g.modeTimer = GHOST_SCATTER_DURATION;
+        }
+      }
+    }
+
+    // Vulnerable if powerMode and not eaten
+    if(powerMode && g.state !== 'eaten') g.state = 'vulnerable';
+    else if(g.state !== 'eaten') g.state = 'normal';
+
+    // Update mode timers
+    if(!g.mode) g.mode = 'scatter';
+    if(typeof g.modeTimer !== 'number') g.modeTimer = GHOST_SCATTER_DURATION;
+    g.modeTimer--;
+    if(g.modeTimer <= 0){
+      if(g.mode === 'scatter'){ g.mode = 'chase'; g.modeTimer = GHOST_CHASE_DURATION; }
+      else { g.mode = 'scatter'; g.modeTimer = GHOST_SCATTER_DURATION; }
+    }
+
+    // Determine target
+    let targetX, targetY;
+    if(g.state === 'vulnerable'){
+      // simple flee behavior: target a point opposite Blue Man
+      targetX = CANVAS_WIDTH - pacman.x;
+      targetY = CANVAS_HEIGHT - pacman.y;
+    } else if(g.mode === 'chase'){
+      targetX = pacman.x;
+      targetY = pacman.y;
+    } else {
+      // scatter corners
+      const corners = [
+        {x: 0, y: 0},
+        {x: CANVAS_WIDTH - TILE_SIZE, y: 0},
+        {x: CANVAS_WIDTH - TILE_SIZE, y: CANVAS_HEIGHT - TILE_SIZE},
+        {x: 0, y: CANVAS_HEIGHT - TILE_SIZE}
+      ];
+      targetX = corners[idx].x;
+      targetY = corners[idx].y;
+    }
+
+    // Choose best direction according to target and state
+    const dirs = ['up','down','left','right'];
+    let bestDir = g.direction;
+    let bestMetric = (g.state === 'vulnerable') ? -Infinity : Infinity;
+
+    dirs.forEach(d => {
+      if(!canMove(g.x, g.y, d, g.speed)) return;
+      let nx = g.x, ny = g.y;
+      switch(d){ case 'up': ny -= g.speed; break; case 'down': ny += g.speed; break; case 'left': nx -= g.speed; break; case 'right': nx += g.speed; break; }
+      const distance = dist(nx, ny, targetX, targetY);
+      if(g.state === 'vulnerable'){
+        if(distance > bestMetric){ bestMetric = distance; bestDir = d; }
+      } else {
+        if(distance < bestMetric){ bestMetric = distance; bestDir = d; }
+      }
+    });
+
+    g.direction = bestDir;
+
+    // Move ghost
+    if(canMove(g.x, g.y, g.direction, g.speed)){
+      const sp = (g.state === 'vulnerable') ? g.speed * 0.5 : g.speed;
+      switch(g.direction){
+        case 'up': g.y -= sp; break;
+        case 'down': g.y += sp; break;
+        case 'left': g.x -= sp; break;
+        case 'right': g.x += sp; break;
+      }
+    }
+
+    // edges
+    if(g.x < -TILE_SIZE) g.x = CANVAS_WIDTH;
+    else if(g.x > CANVAS_WIDTH) g.x = -TILE_SIZE;
+
+    drawGhost(g.x, g.y, idx, g.state === 'vulnerable');
+  });
+}
+
+/* ===== COLLISIONS ===== */
+function checkCollisions(){
+  // dots
+  for(let i=dots.length-1;i>=0;i--){
+    const d = dots[i];
+    if(dist(d.x + TILE_SIZE/2, d.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2) < 10){
+      dots.splice(i,1);
+      score += 10;
+    }
+  }
+
+  // power pellets
+  for(let i=powerPellets.length-1;i>=0;i--){
+    const p = powerPellets[i];
+    if(dist(p.x + TILE_SIZE/2, p.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2) < 12){
+      powerPellets.splice(i,1);
+      score += 50;
+      enterPowerMode();
+    }
+  }
+
+  // ghost collisions
+  ghosts.forEach(g => {
+    if(g.state === 'eaten') return;
+    const d = dist(g.x + TILE_SIZE/2, g.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2);
+    if(d < 15){
+      if(g.state === 'vulnerable'){
+        // eaten: set eaten state, start respawn timer
+        g.state = 'eaten';
+        // small random delay before they begin returning so they don't all come back together
+        g.respawnTimer = 60 + Math.floor(Math.random() * 120); // 1s-3s
+        score += 200;
+        // send them to lair immediately visually (we'll move them back gradually later)
+        g.x = 13 * TILE_SIZE;
+        g.y = 11 * TILE_SIZE;
+      } else {
+        // normal ghost -> Blue Man dies
+        loseLife();
+      }
+    }
+  });
+
+  updateHUD();
+
+  // level complete
+  if(dots.length === 0 && powerPellets.length === 0){
+    score += 1000;
+    gameOver(true);
+  }
+}
+
+/* ===== POWER MODE ===== */
+function enterPowerMode(){
+  powerMode = true;
+  powerTimer = POWER_MODE_DURATION_FRAMES;
+  ghosts.forEach(g => { if(g.state !== 'eaten') g.state = 'vulnerable'; });
+  document.getElementById('powerFill').style.width = '100%';
+  document.querySelector('.powerbar').classList.remove('flash');
+}
+
+function updatePowerBar(){
+  const fillEl = document.getElementById('powerFill');
+  const barEl = fillEl.parentElement;
+  if(powerMode){
+    powerTimer--;
+    const pct = clamp((powerTimer / POWER_MODE_DURATION_FRAMES) * 100, 0, 100);
+    fillEl.style.width = pct + '%';
+    // flash in last 1 second (~60 frames)
+    if(powerTimer <= 60) barEl.classList.add('flash'); else barEl.classList.remove('flash');
+    if(powerTimer <= 0){
+      powerMode = false;
+      barEl.classList.remove('flash');
+      fillEl.style.width = '0%';
+      // revert ghosts that were vulnerable (unless eaten)
+      ghosts.forEach(g => { if(g.state === 'vulnerable') g.state = 'normal'; });
+    }
+  }
+}
+
+/* ===== LIFE MANAGEMENT ===== */
+function loseLife(){
+  // prevent repeated immediate triggers
+  if(!gameActive) return;
+  gameActive = false;
+  lives--;
+  updateHUD();
+  if(lives <= 0){
+    gameOver();
+    return;
+  }
+  // reset positions
+  pacman.x = 14 * TILE_SIZE;
+  pacman.y = 23 * TILE_SIZE;
+  pacman.direction = 'right';
+  pacman.nextDirection = 'right';
+  ghosts.forEach((g, idx) => {
+    // keep eaten ghosts eaten; others return to lair positions
+    if(g.state !== 'eaten'){
+      g.x = (13 + idx) * TILE_SIZE;
+      g.y = 11 * TILE_SIZE;
+      g.state = 'normal';
+      g.mode = 'scatter';
+      g.modeTimer = GHOST_SCATTER_DURATION;
+    }
+  });
+  // short pause then resume
+  setTimeout(()=>{ gameActive = true; if(animationId) cancelAnimationFrame(animationId); gameLoop(); }, 700);
+}
+
+/* ===== LEVEL & GAME OVER ===== */
+function levelComplete(){
+  score += 1000;
+  gameOver(true);
+}
+
+function gameOver(win=false){
+  gameActive = false;
+  if(score > highScore){
+    highScore = score;
+    localStorage.setItem('BlueManHighScore', highScore);
+  }
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOverTitle').textContent = win ? 'LEVEL COMPLETE!' : 'GAME OVER';
+  document.getElementById('gameOver').classList.remove('hidden');
+  updateHUD();
+}
+
+/* ===== Start up ===== */
 window.addEventListener('load', init);
 </script>
 </body>
