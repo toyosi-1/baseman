@@ -3,79 +3,170 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BASE-MAN — Mini App Ready</title>
+<title>BASE-MAN - Playable</title>
 <style>
-:root{--bg:#0A0B0D;--accent:#0052FF;--accent2:#00D1FF;--tile:20px}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-font-family: 'Courier New',monospace;background:var(--bg);color:var(--accent2);
-padding:18px;
-}
-.wrapper{width:min(960px,98vw);}
-h1{color:#fff;text-align:center;text-shadow:0 0 20px var(--accent2);margin:6px 0 12px;font-size:28px}
-
-
-.game-area{display:flex;flex-direction:column;align-items:center;gap:12px}
-
-
-/* responsive canvas container */
-.canvas-wrap{position:relative;background:#000;border-radius:8px;padding:12px;border:4px solid var(--accent);box-shadow:0 0 40px var(--accent);}
-canvas{display:block;background:#000;image-rendering:pixelated;max-width:100%;height:auto;border-radius:4px}
-
-
-/* scoreboard below the arena so it doesn't cover gameplay */
-.hud{display:flex;gap:12px;align-items:center;justify-content:center;padding:8px;background:rgba(0,82,255,0.08);border-radius:6px;border:1px solid rgba(0,82,255,0.12)}
-.hud .box{padding:6px 10px;border-radius:4px;background:rgba(0,82,255,0.04);min-width:90px;text-align:center}
-.hud .box strong{display:block;font-size:14px}
-
-
-.controls{display:flex;gap:8px;justify-content:center;margin-top:8px}
-button{background:linear-gradient(45deg,var(--accent),var(--accent2));color:#fff;border:none;padding:10px 16px;border-radius:6px;font-weight:700;cursor:pointer}
-button:active{transform:translateY(1px)}
-
-
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.panel{pointer-events:auto;background:rgba(10,11,13,0.95);padding:18px;border-radius:8px;text-align:center;color:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0B0D;color:#00D1FF;font-family:'Courier New',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.container{width:560px}
+canvas{display:block;background:#000;border:4px solid #0052FF;border-radius:8px;box-shadow:0 0 40px #0052FF;image-rendering:pixelated}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-top:12px;background:rgba(0,82,255,0.06);padding:8px;border-radius:6px;border:1px solid rgba(0,82,255,0.12)}
+.hud div{font-weight:700}
+.panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.overlay{position:relative}
+.center-panel{background:rgba(10,11,13,0.95);padding:18px;border-radius:8px;text-align:center;color:#fff}
+button{background:linear-gradient(45deg,#0052FF,#00D1FF);border:none;padding:10px 16px;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}
 .hidden{display:none}
-
-
-/* power-mode timer bar */
-.powerbar{height:8px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden;width:160px}
-.powerbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),#88ffff);width:0%}
-
-
-@media (max-width:520px){h1{font-size:20px}.hud{flex-direction:column}}
 </style>
 </head>
 <body>
-<div class="wrapper">
-<h1>🟦 BASE-MAN 👑 — Mini App Ready</h1>
+<div class="container">
+  <div style="position:relative;">
+    <canvas id="gameCanvas" width="560" height="620"></canvas>
+    <div id="gameStart" class="panel">
+      <div class="center-panel">
+        <h2>🟦 BASE-MAN</h2>
+        <p style="max-width:320px;margin:8px auto">Arrow keys to move. Collect TX Orbs. Eat ghosts with Power Pellets.</p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button id="startButton">START GAME</button>
+        </div>
+      </div>
+    </div>
+    <div id="gameOver" class="panel hidden">
+      <div class="center-panel">
+        <h2 id="gameOverTitle">GAME OVER</h2>
+        <p>Final Score: <strong id="finalScore">0</strong></p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button id="restartButton">PLAY AGAIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-
-<div class="game-area">
-<div class="canvas-wrap">
-<canvas id="gameCanvas" width="560" height="620"></canvas>
-
-
-<div id="panelStart" class="overlay">
-<div class="panel">
-<h2>🟦 BASE-MAN</h2>
-<p style="max-width:320px;margin:8px auto">Arrow keys to move. Collect TX Orbs. Eat ghosts with Power Pellets.</p>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-<button id="startButton">START</button>
-<button id="demoButton">DEMO</button>
+  <div class="hud">
+    <div>SCORE: <span id="score">0</span></div>
+    <div>LIVES: <span id="lives">3</span></div>
+    <div>HIGH: <span id="highScore">0</span></div>
+    <div style="display:flex;align-items:center;gap:8px">POWER <div id="powerBar" style="width:120px;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div id="powerFill" style="width:0%;height:100%;background:linear-gradient(90deg,#00D1FF,#88FFFF)"></div></div></div>
+  </div>
 </div>
-</div>
-</div>
 
+<script>
+// Playable single-file version based on your original. No demo, starts when you press START GAME.
+const TILE_SIZE = 20;
+const CANVAS_WIDTH = 560;
+const CANVAS_HEIGHT = 620;
+const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
+const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
+const PACMAN_SPEED = 3;
+const GHOST_SPEED = 1.5;
+const POWER_MODE_DURATION_FRAMES = 300; // frames (~5s at 60fps)
 
-<div id="panelGameOver" class="overlay hidden">
-<div class="panel">
-<h2 id="gameOverTitle">GAME OVER</h2>
-<p>Final Score: <strong id="finalScore">0</strong></p>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-<button id="restartButton">PLAY AGAIN</button>
-</div>
-</div>
+let canvas, ctx;
+let animationId = null;
+let gameActive = false;
+let score = 0;
+let lives = 3;
+let highScore = parseInt(localStorage.getItem('basemanHighScore')) || 0;
+let powerMode = false;
+let powerTimer = 0;
+
+let pacman = { x:0,y:0,direction:'right',nextDirection:'right',speed:PACMAN_SPEED,mouthOpen:0,mouthDir:1 };
+let ghosts = [];
+let dots = [];
+let powerPellets = [];
+let walls = [];
+
+const maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+    [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+    [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+    [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,2,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,2,1],
+    [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+    [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+    [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+    [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+// Drawing helpers
+function drawHex(x,y){ ctx.fillStyle='#0052FF'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE); ctx.strokeStyle='#00D1FF'; ctx.lineWidth=2; ctx.strokeRect(x,y,TILE_SIZE,TILE_SIZE); }
+function drawDot(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,3,0,Math.PI*2); ctx.fill(); }
+function drawPower(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,6,0,Math.PI*2); ctx.fill(); }
+function drawPacman(x,y,dir,mouthOpen){ const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; ctx.fillStyle='#0052FF'; ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fill(); let start=0,end=0; const ms=0.2+mouthOpen*0.6; switch(dir){case 'right': start=ms; end=Math.PI*2-ms; break;case 'left': start=Math.PI-ms; end=Math.PI+ms; break;case 'up': start=Math.PI*1.5-ms; end=Math.PI*1.5+ms; break;case 'down': start=Math.PI*0.5-ms; end=Math.PI*0.5+ms; break;} ctx.fillStyle='#0A0B0D'; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,8,start,end); ctx.closePath(); ctx.fill(); }
+function drawGhost(x,y,index,scared){ const colors=['#FF4444','#00FF88','#00D1FF','#FFAA00']; const symbols=['Ξ','◎','⟠','⚌']; const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; ctx.fillStyle = scared ? '#0052FF' : colors[index % colors.length]; ctx.beginPath(); ctx.arc(cx,cy-2,7,Math.PI,0,false); ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5); ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill(); ctx.fillStyle = scared ? '#0000FF' : '#000000'; ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000000'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(symbols[index % symbols.length], cx, cy+4); }
+
+function init(){
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  document.getElementById('highScore').textContent = highScore;
+  setupEventListeners();
+  resetGame();
+}
+
+function setupEventListeners(){
+  document.addEventListener('keydown', handleKeyPress);
+  document.getElementById('startButton').addEventListener('click', startGame);
+  document.getElementById('restartButton').addEventListener('click', startGame);
+}
+
+function handleKeyPress(e){ if(!gameActive) return; switch(e.key){ case 'ArrowUp': pacman.nextDirection='up'; break; case 'ArrowDown': pacman.nextDirection='down'; break; case 'ArrowLeft': pacman.nextDirection='left'; break; case 'ArrowRight': pacman.nextDirection='right'; break; }}
+
+function startGame(){ gameActive=true; document.getElementById('gameStart').classList.add('hidden'); document.getElementById('gameOver').classList.add('hidden'); resetGame(); if(animationId) cancelAnimationFrame(animationId); gameLoop(); }
+
+function resetGame(){ score=0; lives=3; powerMode=false; powerTimer=0; dots=[]; powerPellets=[]; walls=[];
+  for(let y=0;y<maze.length;y++){ for(let x=0;x<maze[y].length;x++){ const v = maze[y][x]; if(v===0) dots.push({x:x*TILE_SIZE,y:y*TILE_SIZE}); else if(v===2) powerPellets.push({x:x*TILE_SIZE,y:y*TILE_SIZE}); else if(v===1) walls.push({x:x*TILE_SIZE,y:y*TILE_SIZE}); }}
+  pacman.x = 14 * TILE_SIZE; pacman.y = 23 * TILE_SIZE; pacman.direction='right'; pacman.nextDirection='right'; pacman.mouthOpen=0; pacman.mouthDir=1;
+  ghosts = [ {x:13*TILE_SIZE,y:11*TILE_SIZE,direction:'left',speed:GHOST_SPEED,alive:true}, {x:14*TILE_SIZE,y:11*TILE_SIZE,direction:'up',speed:GHOST_SPEED,alive:true}, {x:15*TILE_SIZE,y:11*TILE_SIZE,direction:'right',speed:GHOST_SPEED,alive:true}, {x:13*TILE_SIZE,y:14*TILE_SIZE,direction:'left',speed:GHOST_SPEED,alive:true} ];
+  document.getElementById('score').textContent = score; document.getElementById('lives').textContent = lives; document.getElementById('highScore').textContent = highScore;
+}
+
+function gameLoop(){ if(!gameActive) return; ctx.fillStyle='#0A0B0D'; ctx.fillRect(0,0,canvas.width,canvas.height); walls.forEach(w=>drawHex(w.x,w.y)); dots.forEach(d=>drawDot(d.x,d.y)); powerPellets.forEach(p=>drawPower(p.x,p.y)); updatePacman(); updateGhosts(); checkCollisions(); if(powerMode){ powerTimer--; if(powerTimer<=0){ powerMode=false; ghosts.forEach(g=>g.alive=true); document.getElementById('powerFill').style.width='0%'; }} if(dots.length===0 && powerPellets.length===0){ levelComplete(); return; } animationId = requestAnimationFrame(gameLoop); }
+
+function updatePacman(){ pacman.mouthOpen += 0.12 * pacman.mouthDir; if(pacman.mouthOpen>=1 || pacman.mouthOpen<=0) pacman.mouthDir *= -1; if(canMove(pacman.x,pacman.y,pacman.nextDirection,pacman.speed)) pacman.direction = pacman.nextDirection; if(canMove(pacman.x,pacman.y,pacman.direction,pacman.speed)){ switch(pacman.direction){ case 'up': pacman.y -= pacman.speed; break; case 'down': pacman.y += pacman.speed; break; case 'left': pacman.x -= pacman.speed; break; case 'right': pacman.x += pacman.speed; break; } } if(pacman.x < -TILE_SIZE) pacman.x = CANVAS_WIDTH; else if(pacman.x > CANVAS_WIDTH) pacman.x = -TILE_SIZE; drawPacman(pacman.x,pacman.y,pacman.direction,pacman.mouthOpen); }
+
+function canMove(x,y,direction,speed){ let nx=x, ny=y; switch(direction){ case 'up': ny -= speed; break; case 'down': ny += speed; break; case 'left': nx -= speed; break; case 'right': nx += speed; break; } const corners = [ {x:nx+2,y:ny+2}, {x:nx+TILE_SIZE-2,y:ny+2}, {x:nx+2,y:ny+TILE_SIZE-2}, {x:nx+TILE_SIZE-2,y:ny+TILE_SIZE-2} ]; for(const c of corners){ const gx = Math.floor(c.x / TILE_SIZE); const gy = Math.floor(c.y / TILE_SIZE); if(gx < 0 || gx >= GRID_WIDTH || gy < 0 || gy >= GRID_HEIGHT) continue; if(maze[gy][gx] === 1) return false; } return true; }
+
+function updateGhosts(){ ghosts.forEach((ghost,idx)=>{ if(!ghost.alive) return; if(Math.random() < 0.02 || !canMoveGhost(ghost.x,ghost.y,ghost.direction,ghost.speed)){ const dirs = ['up','down','left','right']; const valids = dirs.filter(d => canMoveGhost(ghost.x,ghost.y,d,ghost.speed)); if(valids.length) ghost.direction = valids[Math.floor(Math.random()*valids.length)]; } if(canMoveGhost(ghost.x,ghost.y,ghost.direction,ghost.speed)){ const speed = powerMode ? ghost.speed * 0.5 : ghost.speed; switch(ghost.direction){ case 'up': ghost.y -= speed; break; case 'down': ghost.y += speed; break; case 'left': ghost.x -= speed; break; case 'right': ghost.x += speed; break; } } if(ghost.x < -TILE_SIZE) ghost.x = CANVAS_WIDTH; else if(ghost.x > CANVAS_WIDTH) ghost.x = -TILE_SIZE; drawGhost(ghost.x,ghost.y,idx,powerMode && ghost.alive); }); }
+
+function canMoveGhost(x,y,direction,speed){ let nx=x, ny=y; switch(direction){ case 'up': ny -= speed; break; case 'down': ny += speed; break; case 'left': nx -= speed; break; case 'right': nx += speed; break; } const corners = [ {x:nx+2,y:ny+2}, {x:nx+TILE_SIZE-2,y:ny+2}, {x:nx+2,y:ny+TILE_SIZE-2}, {x:nx+TILE_SIZE-2,y:ny+TILE_SIZE-2} ]; for(const c of corners){ const gx = Math.floor(c.x / TILE_SIZE); const gy = Math.floor(c.y / TILE_SIZE); if(gx < 0 || gx >= GRID_WIDTH || gy < 0 || gy >= GRID_HEIGHT) continue; if(maze[gy][gx] === 1) return false; } return true; }
+
+function checkCollisions(){ // dots
+ for(let i=dots.length-1;i>=0;i--){ const d=dots[i]; const dx=d.x+TILE_SIZE/2, dy=d.y+TILE_SIZE/2, px=pacman.x+TILE_SIZE/2, py=pacman.y+TILE_SIZE/2; const dist = Math.hypot(dx-px,dy-py); if(dist < 10){ dots.splice(i,1); score += 10; document.getElementById('score').textContent = score; } }
+ // power pellets
+ for(let i=powerPellets.length-1;i>=0;i--){ const p=powerPellets[i]; const dx=p.x+TILE_SIZE/2, dy=p.y+TILE_SIZE/2, px=pacman.x+TILE_SIZE/2, py=pacman.y+TILE_SIZE/2; const dist = Math.hypot(dx-px,dy-py); if(dist < 12){ powerPellets.splice(i,1); score += 50; document.getElementById('score').textContent = score; powerMode = true; powerTimer = POWER_MODE_DURATION_FRAMES; document.getElementById('powerFill').style.width = '100%'; } }
+ // ghosts
+ ghosts.forEach(ghost => { if(!ghost.alive) return; const gx=ghost.x+TILE_SIZE/2, gy=ghost.y+TILE_SIZE/2, px=pacman.x+TILE_SIZE/2, py=pacman.y+TILE_SIZE/2; const d = Math.hypot(gx-px,gy-py); if(d < 15){ if(powerMode){ ghost.alive = false; score += 200; document.getElementById('score').textContent = score; setTimeout(()=>{ ghost.alive = true; ghost.x = 13*TILE_SIZE; ghost.y = 11*TILE_SIZE; },5000); } else { lives--; document.getElementById('lives').textContent = lives; if(lives <= 0){ gameOver(); } else { pacman.x = 14*TILE_SIZE; pacman.y = 23*TILE_SIZE; pacman.direction = 'right'; pacman.nextDirection = 'right'; } } } });
+ // level complete
+ if(dots.length === 0 && powerPellets.length === 0){ score += 1000; gameOver(true); }
+}
+
+function levelComplete(){ score += 1000; gameOver(true); }
+
+function gameOver(win=false){ gameActive = false; if(score > highScore){ highScore = score; localStorage.setItem('basemanHighScore', highScore); document.getElementById('highScore').textContent = highScore; } document.getElementById('finalScore').textContent = score; document.getElementById('gameOverTitle').textContent = win ? 'LEVEL COMPLETE!' : 'GAME OVER'; document.getElementById('gameOver').classList.remove('hidden'); if(animationId) cancelAnimationFrame(animationId); }
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
