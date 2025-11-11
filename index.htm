@@ -1,641 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BLUE MAN — Base Runner</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Man — Base Edition</title>
 <style>
-  :root{
-    --bg:#07121a;
-    --accent:#00D1FF;
-    --button-glow: rgba(0,209,255,0.18);
-    --neon-edge: rgba(0,209,255,0.6);
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:var(--bg);
-    color:var(--accent);
-    font-family: 'Courier New', monospace;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    padding:18px;
-  }
-  .stage{width:100%;max-width:920px;display:flex;flex-direction:column;align-items:center;gap:12px}
-  .canvas-wrap{position:relative;width:100%;display:flex;justify-content:center}
-  canvas{
-    background:#000;
-    border:4px solid #003a66;
-    border-radius:10px;
-    box-shadow:0 0 40px rgba(0,82,255,0.08);
-    image-rendering:pixelated;
-    display:block;
-    width:100%;
-    height:auto;
-    max-width:640px;
-  }
-  .hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:640px;
-       background:rgba(0,82,255,0.03);padding:8px;border-radius:6px;border:1px solid rgba(0,82,255,0.06)}
-  .hud div{font-weight:700;font-size:14px}
-  .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto}
-  .center-panel{background:rgba(8,10,14,0.98);padding:18px;border-radius:10px;text-align:center;color:#fff;max-width:360px}
-  button{background:linear-gradient(45deg,#0052FF,#00D1FF);border:none;padding:10px 16px;border-radius:8px;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,209,255,0.12)}
-  .hidden{display:none}
-  .powerbar{width:120px;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;position:relative}
-  .powerbar>i{display:block;height:100%;background:linear-gradient(90deg,#00D1FF,#88FFFF);width:0%;transition:width 0.08s linear}
-  .powerbar.flash>i{animation:flash 0.4s infinite alternate}
-  @keyframes flash{from{opacity:1}to{opacity:0.3}}
-
-  /* START SCREEN LOGO PULSE + FADE */
-  .bridge-logo{
-    display:block;
-    margin:12px auto 0;
-    width:140px;
-    filter: drop-shadow(0 0 6px rgba(75,75,249,0.8));
-    animation:logoPulse 2.4s ease-in-out infinite;
-  }
-  @keyframes logoPulse{
-    0%{filter:drop-shadow(0 0 6px rgba(75,75,249,0.8)) saturate(1)}
-    50%{filter:drop-shadow(0 0 20px rgba(0,209,255,0.85)) saturate(1.2)}
-    100%{filter:drop-shadow(0 0 6px rgba(75,75,249,0.8)) saturate(1)}
-  }
-  .fade-out{opacity:0;transition:opacity 1s ease-in-out}
-  .start-tag{color:#cfefff;font-size:14px;margin-top:8px;opacity:0.95}
-
-  /* Mint banner */
-  .mint-banner{
-    position:fixed;left:50%;transform:translateX(-50%);
-    bottom:22px;background:linear-gradient(90deg,#002F6C,#0040A8);
-    color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.6);
-    display:flex;gap:10px;align-items:center;z-index:1000;
-  }
-  .mint-banner.hidden{display:none}
-  .mint-banner button{background:#fff;color:#0040A8;padding:6px 10px;border-radius:6px;font-weight:800}
-
-  /* watermark */
-  .watermark{
-    position:absolute;right:8px;bottom:8px;opacity:0.18;width:48px;height:auto;z-index:10;pointer-events:none;
-    transition:opacity .4s ease;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: #000;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    touch-action: none;
   }
 
-  /* MOBILE D-PAD - bold neon buttons, but semi-transparent to avoid rowdiness */
-  .mobile-controls{
-    position:absolute;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50;
-    pointer-events:auto;
-  }
-  .mobile-row{display:flex;gap:8px;justify-content:center}
-  .dpad-btn{
-    width:64px;height:64px;border-radius:14px;border:1px solid rgba(0,209,255,0.2);
-    background:linear-gradient(180deg, rgba(0,209,255,0.08), rgba(0,209,255,0.04));
-    color:var(--accent);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 8px 18px rgba(0,209,255,0.06);
-    backdrop-filter: blur(3px);
-  }
-  .dpad-btn:active{transform:translateY(1px) scale(0.98)}
-  .dpad-btn .label{pointer-events:none}
-  /* show dpad only on small screens */
-  @media (min-width:768px){
-    .mobile-controls{display:none}
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background-color: #000;
   }
 
-  /* Rotate-to-play overlay for portrait */
-  .rotate-overlay{position:fixed;inset:0;background:rgba(7,18,26,0.96);display:flex;align-items:center;justify-content:center;z-index:200;color:#fff;font-weight:700;flex-direction:column;gap:12px;padding:20px}
-  .rotate-overlay.hidden{display:none}
+  /* Start Screen */
+  #startScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #000020, #000);
+    z-index: 5;
+  }
 
-  /* responsive sizes */
-  @media (max-width:520px){
-    .bridge-logo{width:92px}
-    .dpad-btn{width:56px;height:56px}
+  #startScreen h1 {
+    color: #00D1FF;
+    font-size: 3em;
+    text-shadow: 0 0 15px #00D1FF;
+    margin-bottom: 0.5em;
+  }
+
+  #startScreen p {
+    color: #fff;
+    font-size: 1.2em;
+    opacity: 0.8;
+    margin-bottom: 1em;
+  }
+
+  .bridge-logo {
+    width: 120px;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite alternate;
+    filter: drop-shadow(0 0 15px #00D1FF);
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.05); opacity: 1; }
+  }
+
+  .start-button {
+    padding: 0.8em 1.5em;
+    background: linear-gradient(90deg, #00D1FF, #0044FF);
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #00D1FF;
+    transition: transform 0.2s;
+  }
+
+  .start-button:hover {
+    transform: scale(1.05);
+  }
+
+  /* Base logo during gameplay */
+  .base-logo {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 60px;
+    opacity: 0;
+    filter: drop-shadow(0 0 8px #00D1FF);
+    transition: opacity 2s ease-in;
+    z-index: 2;
+  }
+
+  /* Mobile Controls */
+  #controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 4;
+    display: none;
+  }
+
+  .btn {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #00D1FF;
+    border-radius: 50%;
+    margin: 5px;
+    background-color: rgba(0, 0, 40, 0.4);
+    box-shadow: 0 0 10px #00D1FF;
+    color: #00D1FF;
+    font-size: 1.5em;
+    text-align: center;
+    line-height: 50px;
+    user-select: none;
+  }
+
+  @media (max-width: 768px) {
+    #controls { display: flex; flex-wrap: wrap; width: 130px; }
   }
 </style>
 </head>
 <body>
-  <div class="stage">
-    <div class="canvas-wrap">
-      <canvas id="gameCanvas" width="560" height="620"></canvas>
 
-      <!-- START SCREEN -->
-      <div id="gameStart" class="panel">
-        <div id="startPanel" class="center-panel">
-          <h2 style="font-size:20px;margin-bottom:4px">🟦 BLUE MAN — The Base Runner</h2>
-          <div class="start-tag">Base is for everyone</div>
-          <!-- Bridge logo (purple) - keep original -->
-          <img id="bridgeLogo" src="bridge.png" alt="Base Bridge Logo" class="bridge-logo" />
-          <div style="margin-top:14px">
-            <button id="startButton">START GAME</button>
-          </div>
-        </div>
-      </div>
+<div id="startScreen">
+  <h1>BLUE MAN</h1>
+  <p>Base is for everyone</p>
+  <img src="bridge.png" alt="Base Bridge Logo" class="bridge-logo">
+  <button class="start-button" onclick="startGame()">Start</button>
+</div>
 
-      <!-- GAME OVER -->
-      <div id="gameOver" class="panel hidden">
-        <div class="center-panel">
-          <h2 id="gameOverTitle">GAME OVER</h2>
-          <p style="margin:8px 0">Final Score: <strong id="finalScore">0</strong></p>
-          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-            <button id="restartButton">PLAY AGAIN</button>
-          </div>
-        </div>
-      </div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<img src="base.png" alt="Base Logo" class="base-logo" id="baseLogo">
 
-      <!-- watermark (Base wordmark) -->
-      <img id="wordmark" src="base.png" alt="Base Wordmark" class="watermark" />
-    </div>
-
-    <!-- HUD -->
-    <div class="hud" style="max-width:640px">
-      <div>HASH POWER: <span id="score">0</span></div>
-      <div>SESSION KEYS: <span id="lives">3</span></div>
-      <div>HIGH: <span id="highScore">0</span></div>
-      <div style="display:flex;align-items:center;gap:8px">POWER <div class="powerbar" aria-hidden="true"><i id="powerFill"></i></div></div>
-    </div>
-  </div>
-
-  <!-- mobile controls (only visible on small screens) -->
-  <div class="mobile-controls" id="mobileControls" aria-hidden="true">
-    <div class="mobile-row" style="justify-content:center">
-      <div class="dpad-btn" data-dir="up"><span class="label">▲</span></div>
-    </div>
-    <div class="mobile-row">
-      <div class="dpad-btn" data-dir="left"><span class="label">◀</span></div>
-      <div style="width:70px"></div>
-      <div class="dpad-btn" data-dir="right"><span class="label">▶</span></div>
-    </div>
-    <div class="mobile-row" style="justify-content:center">
-      <div class="dpad-btn" data-dir="down"><span class="label">▼</span></div>
-    </div>
-  </div>
-
-  <!-- Mint banner placeholder -->
-  <div id="mintBanner" class="mint-banner hidden" role="status" aria-live="polite">
-    <div><strong>Mint Unlocked!</strong> You reached the mint threshold.</div>
-    <div style="margin-left:8px">
-      <button id="claimMintBtn">Claim Mint</button>
-      <button id="closeMintBtn" style="margin-left:8px;background:transparent;border:1px solid rgba(255,255,255,0.12);color:#fff">Close</button>
-    </div>
-  </div>
-
-  <!-- rotate overlay for portrait on mobile -->
-  <div id="rotateOverlay" class="rotate-overlay hidden">
-    <div style="font-size:18px">Rotate your device to landscape to play</div>
-    <div style="font-size:13px;opacity:0.9">Best experience in landscape</div>
-  </div>
+<div id="controls">
+  <div class="btn" id="up">▲</div>
+  <div class="btn" id="left">◀</div>
+  <div class="btn" id="down">▼</div>
+  <div class="btn" id="right">▶</div>
+</div>
 
 <script>
-/* ---------------- CONFIG ---------------- */
-const TILE_SIZE = 20;
-const BASE_CANVAS_W = 560;
-const BASE_CANVAS_H = 620;
-let PACMAN_SPEED = 2.8;
-let GHOST_SPEED = 1.9;
-const POWER_MODE_DURATION_FRAMES = 240;
-const GHOST_SCATTER_DURATION = 240;
-const GHOST_CHASE_DURATION = 540;
-const GHOST_RANDOM_TURN_CHANCE = 0.005;
-const MINT_SCORE_THRESHOLD = 15000;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const startScreen = document.getElementById('startScreen');
+const baseLogo = document.getElementById('baseLogo');
 
-/* ---------------- STATE ---------------- */
-let canvas = document.getElementById('gameCanvas');
-let ctx = canvas.getContext('2d');
-let animationId = null;
-let gameActive = false;
+let gameRunning = false;
+let player = { x: 400, y: 300, size: 20, speed: 3 };
+let ghosts = [];
 let score = 0;
-let lives = 3;
-let highScore = parseInt(localStorage.getItem('BlueManHighScore')) || 0;
 let powerMode = false;
 let powerTimer = 0;
-let pacman = { x:0,y:0,direction:'right',nextDirection:'right',speed:PACMAN_SPEED,mouthOpen:0,mouthDir:1 };
-let ghosts = [], dots = [], powerPellets = [], walls = [];
-let maze = [ /* same maze matrix used before (31x28) */ ];
 
-/* Insert the maze data (31 rows x 28 cols) */
-maze = [
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-[1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
-[1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-[1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-[1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-[1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-[1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-[1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-[1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-[1,2,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,2,1],
-[1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
-[1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
-[1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-[1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
-[1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
-/* ---------------- HELPERS ---------------- */
-function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
-function isCentered(entity){
-  const cx = (entity.x + TILE_SIZE/2);
-  const cy = (entity.y + TILE_SIZE/2);
-  return (Math.abs((cx % TILE_SIZE) - TILE_SIZE/2) < 1.3) && (Math.abs((cy % TILE_SIZE) - TILE_SIZE/2) < 1.3);
+// Maze + Warp edges setup
+function wrapPosition(entity) {
+  if (entity.x < 0) entity.x = canvas.width;
+  else if (entity.x > canvas.width) entity.x = 0;
+  if (entity.y < 0) entity.y = canvas.height;
+  else if (entity.y > canvas.height) entity.y = 0;
 }
 
-/* ---------------- DRAW HELPERS (Base themed visuals) ---------------- */
-function drawHex(x,y){ ctx.fillStyle='#031727'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE); ctx.strokeStyle='rgba(0,210,255,0.12)'; ctx.lineWidth=1; ctx.strokeRect(x+1,y+1,TILE_SIZE-2,TILE_SIZE-2); }
-function drawDot(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,3,0,Math.PI*2); ctx.fill(); }
-function drawPower(x,y,t=0){ const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2, s=6; ctx.save(); ctx.translate(cx,cy); ctx.rotate((t%360)*Math.PI/180*0.35); ctx.fillStyle='rgba(0,210,255,0.92)'; ctx.fillRect(-s/2,-s/2,s,s); ctx.restore(); ctx.beginPath(); ctx.fillStyle='rgba(0,210,255,0.06)'; ctx.arc(cx,cy,12,0,Math.PI*2); ctx.fill(); }
-function drawCore(x,y,t=0){ const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; const rCore=8; const pulse=0.92+0.08*Math.sin(t*0.12); const g=ctx.createRadialGradient(cx,cy,1,cx,cy,rCore*2); g.addColorStop(0,'rgba(255,255,255,0.95)'); g.addColorStop(0.15,'rgba(150,240,255,0.95)'); g.addColorStop(0.35,'rgba(0,208,255,0.9)'); g.addColorStop(1,'rgba(0,30,70,0.6)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rCore*pulse,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.fillStyle='rgba(0,200,255,0.08)'; ctx.arc(cx,cy,rCore*3*pulse,0,Math.PI*2); ctx.fill(); }
-function drawGhost(x,y,index,state){ const colors=['#ff6b6b','#9affb8','#6fdfff','#ffcf66']; const syms=['Ξ','◎','⟠','⚌']; const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2; ctx.fillStyle = state === 'vulnerable' ? '#0052FF' : colors[index%colors.length]; ctx.beginPath(); ctx.arc(cx,cy-2,7,Math.PI,0,false); ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5); ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill(); ctx.fillStyle = state === 'vulnerable' ? '#0000FF' : '#000'; ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(syms[index%syms.length],cx,cy+4); }
-
-/* ---------------- INITIALIZATION ---------------- */
-function init(){
-  // responsive sizing for canvas element (keeps aspect ratio)
-  fitCanvasToContainer();
-  window.addEventListener('resize', fitCanvasToContainer);
-
-  document.getElementById('highScore').textContent = highScore;
-  setupEventListeners();
-  previewDraw();
-  showMobileControlsIfNeeded();
-}
-
-/* size the internal drawing scale to maintain pixel-perfect logic while scaling visually */
-function fitCanvasToContainer(){
-  const wrap = canvas.parentElement;
-  const maxW = Math.min(wrap.clientWidth, 800);
-  const scale = maxW / BASE_CANVAS_W;
-  canvas.style.width = Math.round(BASE_CANVAS_W * scale) + 'px';
-  canvas.style.height = Math.round(BASE_CANVAS_H * scale) + 'px';
-  // keep canvas internal resolution fixed (logic uses base sizes)
-  canvas.width = BASE_CANVAS_W;
-  canvas.height = BASE_CANVAS_H;
-  ctx = canvas.getContext('2d');
-}
-
-/* ---------------- EVENT LISTENERS ---------------- */
-function setupEventListeners(){
-  document.getElementById('startButton').addEventListener('click', startGame);
-  document.getElementById('restartButton').addEventListener('click', startGame);
-  document.getElementById('claimMintBtn').addEventListener('click', claimMint);
-  document.getElementById('closeMintBtn').addEventListener('click', ()=>document.getElementById('mintBanner').classList.add('hidden'));
-  document.addEventListener('keydown', handleKeyPress);
-  // mobile dpad
-  document.querySelectorAll('.dpad-btn').forEach(btn=>{
-    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); handleDpad(btn.dataset.dir); });
-    btn.addEventListener('mousedown', ()=>handleDpad(btn.dataset.dir));
+// Initialize ghosts
+for (let i = 0; i < 4; i++) {
+  ghosts.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    size: 18,
+    color: 'red',
+    vx: (Math.random() - 0.5) * 2,
+    vy: (Math.random() - 0.5) * 2
   });
-  // detect orientation and show rotate overlay if in portrait on mobile
-  window.addEventListener('orientationchange', checkOrientation);
-  checkOrientation();
 }
 
-/* show/hide mobile controls depending on width */
-function showMobileControlsIfNeeded(){
-  const controls = document.getElementById('mobileControls');
-  if(window.innerWidth <= 767){
-    controls.setAttribute('aria-hidden','false');
-    controls.style.display = 'block';
-  } else {
-    controls.setAttribute('aria-hidden','true');
-    controls.style.display = 'none';
+// Draw player
+function drawPlayer() {
+  ctx.fillStyle = '#00D1FF';
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.size, 0.2 * Math.PI, 1.8 * Math.PI);
+  ctx.lineTo(player.x, player.y);
+  ctx.fill();
+}
+
+// Draw ghosts
+function drawGhosts() {
+  for (let g of ghosts) {
+    ctx.fillStyle = g.color;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, g.size, Math.PI, 2 * Math.PI);
+    ctx.lineTo(g.x - g.size, g.y);
+    ctx.fill();
   }
 }
 
-/* orientation check */
-function checkOrientation(){
-  if(window.innerWidth <= 767 && window.innerHeight > window.innerWidth){
-    document.getElementById('rotateOverlay').classList.remove('hidden');
-  } else {
-    document.getElementById('rotateOverlay').classList.add('hidden');
-  }
-}
+// Move ghosts with smarter AI
+function moveGhosts() {
+  for (let g of ghosts) {
+    let dx = player.x - g.x;
+    let dy = player.y - g.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
 
-/* ---------------- INPUT ---------------- */
-function handleKeyPress(e){
-  if(!gameActive) return;
-  switch(e.key){
-    case 'ArrowUp': pacman.nextDirection = 'up'; break;
-    case 'ArrowDown': pacman.nextDirection = 'down'; break;
-    case 'ArrowLeft': pacman.nextDirection = 'left'; break;
-    case 'ArrowRight': pacman.nextDirection = 'right'; break;
-  }
-}
-function handleDpad(dir){
-  if(!gameActive) return;
-  pacman.nextDirection = dir;
-}
-
-/* ---------------- GAME CONTROL ---------------- */
-function startGame(){
-  // fade out logo / start panel
-  const startPanel = document.getElementById('startPanel');
-  const bridge = document.getElementById('bridgeLogo');
-  bridge.classList.add('fade-out');
-  startPanel.classList.add('fade-out');
-  setTimeout(()=>{
-    document.getElementById('gameStart').classList.add('hidden');
-    // show watermark softly
-    const wm = document.getElementById('wordmark');
-    wm.style.opacity = 0.18;
-    initGame();
-    gameActive = true;
-    if(animationId) cancelAnimationFrame(animationId);
-    animationId = requestAnimationFrame(gameLoop);
-  }, 900);
-}
-
-function initGame(){
-  score = 0; lives = 3; powerMode = false; powerTimer = 0;
-  dots = []; powerPellets = []; walls = [];
-  for(let y=0;y<maze.length;y++){
-    for(let x=0;x<maze[y].length;x++){
-      const v = maze[y][x];
-      if(v === 0) dots.push({x:x*TILE_SIZE,y:y*TILE_SIZE});
-      else if(v === 2) powerPellets.push({x:x*TILE_SIZE,y:y*TILE_SIZE});
-      else if(v === 1) walls.push({x:x*TILE_SIZE,y:y*TILE_SIZE});
-    }
-  }
-  pacman.x = 14*TILE_SIZE; pacman.y = 23*TILE_SIZE; pacman.direction = 'right'; pacman.nextDirection = 'right'; pacman.mouthOpen=0; pacman.mouthDir=1;
-  ghosts = [
-    {x:13*TILE_SIZE,y:11*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION,lastDirChangeTick:0},
-    {x:14*TILE_SIZE,y:11*TILE_SIZE,direction:'up',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION,lastDirChangeTick:0},
-    {x:15*TILE_SIZE,y:11*TILE_SIZE,direction:'right',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION,lastDirChangeTick:0},
-    {x:13*TILE_SIZE,y:14*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION,lastDirChangeTick:0}
-  ];
-  document.getElementById('powerFill').style.width = '0%';
-  updateHUD();
-}
-
-/* ---------------- GAME LOOP ---------------- */
-let frameTick = 0;
-function gameLoop(){
-  if(!gameActive) return;
-  frameTick++;
-  ctx.fillStyle = '#07121a';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // draw maze
-  walls.forEach(w => drawHex(w.x,w.y));
-  dots.forEach(d => drawDot(d.x,d.y));
-  for(let i=0;i<powerPellets.length;i++) drawPower(powerPellets[i].x,powerPellets[i].y, frameTick + i*7);
-
-  updatePacman(frameTick);
-  updateGhosts(frameTick);
-  checkCollisions();
-  updatePowerBar();
-
-  if(dots.length === 0 && powerPellets.length === 0){
-    score += 1000;
-    levelComplete();
-    return;
-  }
-
-  animationId = requestAnimationFrame(gameLoop);
-}
-
-/* ---------------- MOVEMENT & COLLISIONS HELPERS ---------------- */
-function canMove(x,y,direction,speed){
-  let nx = x, ny = y;
-  switch(direction){
-    case 'up': ny -= speed; break;
-    case 'down': ny += speed; break;
-    case 'left': nx -= speed; break;
-    case 'right': nx += speed; break;
-  }
-  const corners = [
-    {x: nx + 2, y: ny + 2},
-    {x: nx + TILE_SIZE - 2, y: ny + 2},
-    {x: nx + 2, y: ny + TILE_SIZE - 2},
-    {x: nx + TILE_SIZE - 2, y: ny + TILE_SIZE - 2}
-  ];
-  for(const c of corners){
-    const gx = Math.floor(c.x / TILE_SIZE);
-    const gy = Math.floor(c.y / TILE_SIZE);
-    if(gx < 0 || gx >= (canvas.width/TILE_SIZE)|0 || gy < 0 || gy >= (canvas.height/TILE_SIZE)|0) continue;
-    if(maze[gy][gx] === 1) return false;
-  }
-  return true;
-}
-
-/* ---------------- PACMAN UPDATE ---------------- */
-function updatePacman(t){
-  pacman.mouthOpen += 0.12 * pacman.mouthDir;
-  if(pacman.mouthOpen >= 1 || pacman.mouthOpen <= 0) pacman.mouthDir *= -1;
-
-  if(canMove(pacman.x, pacman.y, pacman.nextDirection, pacman.speed)) pacman.direction = pacman.nextDirection;
-
-  if(canMove(pacman.x, pacman.y, pacman.direction, pacman.speed)){
-    switch(pacman.direction){
-      case 'up': pacman.y -= pacman.speed; break;
-      case 'down': pacman.y += pacman.speed; break;
-      case 'left': pacman.x -= pacman.speed; break;
-      case 'right': pacman.x += pacman.speed; break;
-    }
-  }
-
-  // tunnel wrap left-right
-  if(pacman.x < -TILE_SIZE) pacman.x = canvas.width - TILE_SIZE;
-  else if(pacman.x > canvas.width - TILE_SIZE) pacman.x = -TILE_SIZE + 0.5;
-
-  drawCore(pacman.x, pacman.y, t);
-}
-
-/* ---------------- GHOSTS ---------------- */
-function updateGhosts(t){
-  ghosts.forEach((g,idx)=>{
-    if(g.state === 'eaten'){
-      if(g.respawnTimer > 0){ g.respawnTimer--; }
-      else {
-        const lairX = 13*TILE_SIZE + (idx % 2) * TILE_SIZE;
-        const lairY = (idx === 3 ? 14 : 11) * TILE_SIZE;
-        const dx = lairX - g.x, dy = lairY - g.y;
-        const d = Math.hypot(dx,dy);
-        const step = Math.min(g.speed,d);
-        if(d > 1){ g.x += (dx/d)*step; g.y += (dy/d)*step; drawGhost(g.x,g.y,idx,true); return; }
-        else { g.x=lairX; g.y=lairY; g.state='normal'; g.mode='scatter'; g.modeTimer=GHOST_SCATTER_DURATION; }
-      }
-    }
-
-    if(powerMode && g.state !== 'eaten') g.state = 'vulnerable';
-    else if(g.state !== 'eaten') g.state = 'normal';
-
-    if(!g.mode) g.mode='scatter';
-    if(typeof g.modeTimer !== 'number') g.modeTimer = GHOST_SCATTER_DURATION;
-    g.modeTimer--;
-    if(g.modeTimer <= 0){
-      if(g.mode === 'scatter'){ g.mode='chase'; g.modeTimer = GHOST_CHASE_DURATION; }
-      else { g.mode='scatter'; g.modeTimer = GHOST_SCATTER_DURATION; }
-    }
-
-    const centered = isCentered(g);
-    const now = frameTick;
-    const canConsider = centered || (now - (g.lastDirChangeTick || 0) > 20);
-
-    if(canConsider){
-      let targetX, targetY;
-      if(g.state === 'vulnerable'){ targetX = canvas.width - pacman.x; targetY = canvas.height - pacman.y; }
-      else if(g.mode === 'chase'){ targetX = pacman.x; targetY = pacman.y; }
-      else {
-        const corners = [{x:0,y:0},{x:canvas.width - TILE_SIZE,y:0},{x:canvas.width - TILE_SIZE,y:canvas.height - TILE_SIZE},{x:0,y:canvas.height - TILE_SIZE}];
-        targetX = corners[idx].x; targetY = corners[idx].y;
-      }
-
-      const dirs = ['up','down','left','right'];
-      let bestDir = g.direction;
-      let bestMetric = (g.state === 'vulnerable') ? -Infinity : Infinity;
-
-      dirs.forEach(d=>{
-        if(!canMove(g.x,g.y,d,g.speed)) return;
-        let nx=g.x, ny=g.y;
-        switch(d){ case 'up': ny-=g.speed; break; case 'down': ny+=g.speed; break; case 'left': nx-=g.speed; break; case 'right': nx+=g.speed; break; }
-        const distance = dist(nx,ny,targetX,targetY);
-        if(g.state === 'vulnerable'){ if(distance > bestMetric){ bestMetric = distance; bestDir = d; } }
-        else { if(distance < bestMetric){ bestMetric = distance; bestDir = d; } }
-      });
-
-      if(Math.random() < GHOST_RANDOM_TURN_CHANCE){
-        const valids = dirs.filter(d=>canMove(g.x,g.y,d,g.speed));
-        if(valids.length) bestDir = valids[Math.floor(Math.random()*valids.length)];
-      }
-
-      if(bestDir !== g.direction){ g.direction = bestDir; g.lastDirChangeTick = now; }
-    }
-
-    if(canMove(g.x,g.y,g.direction,g.speed)){
-      const sp = (g.state === 'vulnerable') ? g.speed*0.55 : g.speed;
-      switch(g.direction){ case 'up': g.y -= sp; break; case 'down': g.y += sp; break; case 'left': g.x -= sp; break; case 'right': g.x += sp; break; }
+    if (powerMode) {
+      g.vx -= dx / dist * 0.05;
+      g.vy -= dy / dist * 0.05;
     } else {
-      g.lastDirChangeTick = frameTick;
+      g.vx += dx / dist * 0.05;
+      g.vy += dy / dist * 0.05;
     }
 
-    if(g.x < -TILE_SIZE) g.x = canvas.width - TILE_SIZE;
-    else if(g.x > canvas.width - TILE_SIZE) g.x = -TILE_SIZE + 0.5;
+    // Limit speed
+    let speed = Math.sqrt(g.vx * g.vx + g.vy * g.vy);
+    if (speed > 2.5) {
+      g.vx *= 2.5 / speed;
+      g.vy *= 2.5 / speed;
+    }
 
-    drawGhost(g.x,g.y,idx,g.state === 'vulnerable');
-  });
+    g.x += g.vx;
+    g.y += g.vy;
+    wrapPosition(g);
+  }
 }
 
-/* ---------------- COLLISIONS ---------------- */
-function checkCollisions(){
-  for(let i=dots.length-1;i>=0;i--){
-    const d=dots[i];
-    if(dist(d.x+TILE_SIZE/2,d.y+TILE_SIZE/2,pacman.x+TILE_SIZE/2,pacman.y+TILE_SIZE/2) < 10){
-      dots.splice(i,1); score += 10;
-    }
-  }
-
-  for(let i=powerPellets.length-1;i>=0;i--){
-    const p=powerPellets[i];
-    if(dist(p.x+TILE_SIZE/2,p.y+TILE_SIZE/2,pacman.x+TILE_SIZE/2,pacman.y+TILE_SIZE/2) < 12){
-      powerPellets.splice(i,1); score += 50; enterPowerMode();
-    }
-  }
-
-  ghosts.forEach(g=>{
-    if(g.state === 'eaten') return;
-    const d = dist(g.x+TILE_SIZE/2,g.y+TILE_SIZE/2,pacman.x+TILE_SIZE/2,pacman.y+TILE_SIZE/2);
-    if(d < 15){
-      if(g.state === 'vulnerable'){
-        g.state='eaten'; g.respawnTimer = 60 + Math.floor(Math.random()*120); score += 200; g.x=13*TILE_SIZE; g.y=11*TILE_SIZE;
+// Collision detection
+function checkCollisions() {
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    let g = ghosts[i];
+    let dx = player.x - g.x;
+    let dy = player.y - g.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < player.size + g.size - 5) {
+      if (powerMode) {
+        ghosts.splice(i, 1);
+        score += 500;
       } else {
-        loseLife();
+        gameOver();
       }
     }
+  }
+}
+
+// Game loop
+function gameLoop() {
+  if (!gameRunning) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw maze background glow
+  ctx.fillStyle = "rgba(0, 10, 40, 0.3)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  moveGhosts();
+  drawGhosts();
+  drawPlayer();
+  checkCollisions();
+
+  if (powerMode) {
+    powerTimer -= 1;
+    if (powerTimer <= 0) powerMode = false;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Start game
+function startGame() {
+  startScreen.style.transition = "opacity 1s";
+  startScreen.style.opacity = 0;
+  setTimeout(() => startScreen.style.display = "none", 1000);
+  baseLogo.style.opacity = 0.3;
+  gameRunning = true;
+  gameLoop();
+}
+
+// Game over
+function gameOver() {
+  gameRunning = false;
+  alert("Game Over! Score: " + score);
+  location.reload();
+}
+
+// Mobile controls
+const btns = {
+  up: document.getElementById('up'),
+  down: document.getElementById('down'),
+  left: document.getElementById('left'),
+  right: document.getElementById('right')
+};
+
+for (let dir in btns) {
+  btns[dir].addEventListener('touchstart', () => {
+    if (dir === 'up') player.y -= player.speed * 10;
+    if (dir === 'down') player.y += player.speed * 10;
+    if (dir === 'left') player.x -= player.speed * 10;
+    if (dir === 'right') player.x += player.speed * 10;
   });
-
-  if(score >= MINT_SCORE_THRESHOLD && !document.getElementById('mintBanner').classList.contains('hidden')){
-    // already shown
-  } else if(score >= MINT_SCORE_THRESHOLD){
-    document.getElementById('mintBanner').classList.remove('hidden');
-  }
-
-  updateHUD();
-
-  if(dots.length === 0 && powerPellets.length === 0){
-    score += 1000; levelComplete();
-  }
 }
 
-/* ---------------- POWER MODE ---------------- */
-function enterPowerMode(){
-  powerMode = true; powerTimer = POWER_MODE_DURATION_FRAMES;
-  ghosts.forEach(g => { if(g.state !== 'eaten') g.state = 'vulnerable'; });
-  document.getElementById('powerFill').style.width = '100%';
-  document.querySelector('.powerbar').classList.remove('flash');
-}
-function updatePowerBar(){
-  const fill = document.getElementById('powerFill'), bar = fill.parentElement;
-  if(powerMode){
-    powerTimer--;
-    const pct = clamp((powerTimer/POWER_MODE_DURATION_FRAMES)*100,0,100);
-    fill.style.width = pct + '%';
-    if(powerTimer <= 60) bar.classList.add('flash'); else bar.classList.remove('flash');
-    if(powerTimer <= 0){ powerMode=false; bar.classList.remove('flash'); fill.style.width='0%'; ghosts.forEach(g=>{ if(g.state==='vulnerable') g.state='normal'; }); }
-  }
-}
-
-/* ---------------- LIVES / GAMEOVER ---------------- */
-function loseLife(){
-  if(!gameActive) return;
-  gameActive = false;
-  lives--; updateHUD();
-  if(lives <= 0){ gameOver(); return; }
-  pacman.x = 14*TILE_SIZE; pacman.y = 23*TILE_SIZE; pacman.direction='right'; pacman.nextDirection='right';
-  ghosts.forEach((g,idx)=>{ if(g.state !== 'eaten'){ g.x=(13+idx)*TILE_SIZE; g.y=11*TILE_SIZE; g.state='normal'; g.mode='scatter'; g.modeTimer=GHOST_SCATTER_DURATION; }});
-  setTimeout(()=>{ gameActive = true; if(animationId) cancelAnimationFrame(animationId); animationId = requestAnimationFrame(gameLoop); }, 700);
-}
-function levelComplete(){ score += 1000; gameOver(true); }
-function gameOver(win=false){
-  gameActive=false;
-  if(score > highScore){ highScore = score; localStorage.setItem('BlueManHighScore', highScore); }
-  document.getElementById('finalScore').textContent = score;
-  document.getElementById('gameOverTitle').textContent = win ? 'LEVEL COMPLETE!' : 'GAME OVER';
-  document.getElementById('gameOver').classList.remove('hidden');
-  updateHUD();
-}
-
-/* ---------------- MINT UI ---------------- */
-function claimMint(){
-  alert('Mint flow placeholder — integrate your Base mint endpoint here.');
-  document.getElementById('mintBanner').classList.add('hidden');
-}
-
-/* ---------------- HUD ---------------- */
-function updateHUD(){
-  document.getElementById('score').textContent = score;
-  document.getElementById('lives').textContent = lives;
-  document.getElementById('highScore').textContent = highScore;
-}
-
-/* ---------------- PREVIEW DRAW (before start) ---------------- */
-function previewDraw(){
-  ctx.fillStyle = '#07121a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  for(let y=0;y<maze.length;y++){
-    for(let x=0;x<maze[y].length;x++){
-      if(maze[y][x] === 1) drawHex(x*TILE_SIZE,y*TILE_SIZE);
-      else if(maze[y][x] === 0) drawDot(x*TILE_SIZE,y*TILE_SIZE);
-      else if(maze[y][x] === 2) drawPower(x*TILE_SIZE,y*TILE_SIZE,0);
-    }
-  }
-}
-
-/* ---------------- UTIL ---------------- */
-window.addEventListener('load', init);
-window.addEventListener('resize', showMobileControlsIfNeeded);
+// Keyboard movement
+document.addEventListener('keydown', e => {
+  if (!gameRunning) return;
+  if (e.key === 'ArrowUp') player.y -= player.speed * 5;
+  if (e.key === 'ArrowDown') player.y += player.speed * 5;
+  if (e.key === 'ArrowLeft') player.x -= player.speed * 5;
+  if (e.key === 'ArrowRight') player.x += player.speed * 5;
+});
 </script>
 </body>
 </html>
-
