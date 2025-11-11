@@ -3,29 +3,30 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BLUE MAN — Playable</title>
+<title>BLUE MAN — Base Runner</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    background:#0A0B0D;color:#00D1FF;
+    background:#07121a;
+    color:#00d1ff;
     font-family:'Courier New',monospace;
     display:flex;align-items:center;justify-content:center;
     min-height:100vh;padding:20px;
   }
   .container{width:560px;position:relative}
   canvas{
-    display:block;background:#000;border:4px solid #0052FF;
-    border-radius:8px;box-shadow:0 0 40px #0052FF;
+    display:block;background:#000;border:4px solid #003a66;
+    border-radius:8px;box-shadow:0 0 40px rgba(0,82,255,0.12);
     image-rendering:pixelated;
   }
   .hud{display:flex;justify-content:space-between;align-items:center;margin-top:12px;
-       background:rgba(0,82,255,0.06);padding:8px;border-radius:6px;border:1px solid rgba(0,82,255,0.12)}
-  .hud div{font-weight:700}
+       background:rgba(0,82,255,0.04);padding:8px;border-radius:6px;border:1px solid rgba(0,82,255,0.08)}
+  .hud div{font-weight:700;font-size:14px}
   .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-  .center-panel{background:rgba(10,11,13,0.95);padding:18px;border-radius:8px;text-align:center;color:#fff}
+  .center-panel{background:rgba(8,10,14,0.98);padding:18px;border-radius:8px;text-align:center;color:#fff;max-width:360px}
   button{background:linear-gradient(45deg,#0052FF,#00D1FF);border:none;padding:10px 16px;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}
   .hidden{display:none}
-  .powerbar{width:120px;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative}
+  .powerbar{width:120px;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;position:relative}
   .powerbar>i{display:block;height:100%;background:linear-gradient(90deg,#00D1FF,#88FFFF);width:0%;transition:width 0.1s linear}
   .powerbar.flash>i{animation:flash 0.4s infinite alternate}
   @keyframes flash{from{opacity:1;}to{opacity:0.3;}}
@@ -46,8 +47,10 @@
 
     <div id="gameStart" class="panel">
       <div class="center-panel">
-        <h2>🟦 BLUE MAN</h2>
-        <p style="max-width:320px;margin:8px auto">Arrow keys to move. Collect TX Orbs. Eat ghosts with Power Pellets.</p>
+        <h2 style="margin-bottom:6px">🟦 BLUE MAN — Base Runner</h2>
+        <p style="max-width:360px;margin:8px auto 12px">
+          Arrow keys to move. Collect <strong>TX Orbs</strong>. Use <strong>Consensus Cores</strong> (power pellets) to subdue corrupted nodes.
+        </p>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
           <button id="startButton">START GAME</button>
         </div>
@@ -65,15 +68,14 @@
     </div>
 
     <div class="hud">
-      <div>SCORE: <span id="score">0</span></div>
-      <div>LIVES: <span id="lives">3</span></div>
+      <div>HASH POWER: <span id="score">0</span></div>
+      <div>SESSION KEYS: <span id="lives">3</span></div>
       <div>HIGH: <span id="highScore">0</span></div>
       <div style="display:flex;align-items:center;gap:8px">POWER <div class="powerbar" aria-hidden="true"><i id="powerFill"></i></div></div>
     </div>
-
   </div>
 
-  <!-- mint banner (hidden until unlocked) -->
+  <!-- mint banner -->
   <div id="mintBanner" class="mint-banner hidden" role="status" aria-live="polite">
     <div><strong>Mint Unlocked!</strong> You reached the mint threshold.</div>
     <div style="margin-left:8px">
@@ -89,15 +91,16 @@ const CANVAS_WIDTH = 560;
 const CANVAS_HEIGHT = 620;
 const GRID_WIDTH = CANVAS_WIDTH / TILE_SIZE;
 const GRID_HEIGHT = CANVAS_HEIGHT / TILE_SIZE;
-const PACMAN_SPEED = 3;
-const GHOST_SPEED = 1.5;
-const POWER_MODE_DURATION_FRAMES = 300; // ~5s
-const GHOST_SCATTER_DURATION = 300;
-const GHOST_CHASE_DURATION = 600;
+let PACMAN_SPEED = 2.8;        // slight reduction for fairness
+let GHOST_SPEED = 1.9;         // increased difficulty
+const POWER_MODE_DURATION_FRAMES = 240; // ~4s shorter, harder
+const GHOST_SCATTER_DURATION = 240;
+const GHOST_CHASE_DURATION = 540;
+const GHOST_RANDOM_TURN_CHANCE = 0.005; // rarer random turns
 
-// MINT CONFIG - change as needed
-const MINT_SCORE_THRESHOLD = 15000; // default, tune via playtests
-let mintUnlocked = false;            // session flag (reset on reload)
+// MINT CONFIG
+const MINT_SCORE_THRESHOLD = 15000;
+let mintUnlocked = false;
 
 /* ---------------- STATE ---------------- */
 let canvas, ctx;
@@ -113,14 +116,8 @@ let pacman = { x:0,y:0,direction:'right',nextDirection:'right',speed:PACMAN_SPEE
 let ghosts = [], dots = [], powerPellets = [], walls = [];
 
 /* ---------------- MAZE ---------------- */
-/* (same maze as earlier — 0 dot, 1 wall, 2 power pellet) */
-const maze=[/* paste the same 31x28 maze array as used previously */];
-
-// --- For brevity in message reviewer, I'll programmatically insert the maze array here
-// (In your file paste the full maze array exactly like previous iterations.)
-(function fillMaze(){
-  // Full maze array from earlier iterations:
-  const raw = [
+/* Maze 31 rows x 28 cols (same as earlier) */
+const maze = [
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
 [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
@@ -152,54 +149,79 @@ const maze=[/* paste the same 31x28 maze array as used previously */];
 [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  ];
-  // write into outer maze variable
-  for(let r=0;r<raw.length;r++) maze[r]=raw[r];
-})();
+];
 
-/* ---------------- DRAW HELPERS ---------------- */
-/* Glowing Energy Core (Blue Man) drawing */
-function drawBlueCore(x,y,dir,mouthOpen, t=0){
-  // radial gradient core + slight pulsing using 't'
-  const cx = x + TILE_SIZE/2;
-  const cy = y + TILE_SIZE/2;
-  const rCore = 8;
-  const pulse = 0.9 + 0.1 * Math.sin(t * 0.12);
-  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, rCore * 2);
-  g.addColorStop(0, 'rgba(255,255,255,0.95)');
-  g.addColorStop(0.15, 'rgba(128,230,255,0.95)');
-  g.addColorStop(0.35, 'rgba(0,208,255,0.9)');
-  g.addColorStop(1, 'rgba(0,32,96,0.65)');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(cx, cy, rCore * pulse, 0, Math.PI*2);
-  ctx.fill();
-  // soft outer glow
-  ctx.beginPath();
-  ctx.fillStyle = 'rgba(0,208,255,0.08)';
-  ctx.arc(cx, cy, rCore*3 * pulse, 0, Math.PI*2);
-  ctx.fill();
+/* ---------------- HELPERS ---------------- */
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
+function isCentered(entity){
+  // check if entity is near tile center (for smoother direction changes)
+  const cx = (entity.x + TILE_SIZE/2);
+  const cy = (entity.y + TILE_SIZE/2);
+  return (Math.abs((cx % TILE_SIZE) - TILE_SIZE/2) < 1.2) && (Math.abs((cy % TILE_SIZE) - TILE_SIZE/2) < 1.2);
 }
 
-/* Generic draw primitives for maze + dots + ghosts */
-function drawHex(x,y){ ctx.fillStyle='#0052FF'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE); ctx.strokeStyle='#00D1FF'; ctx.lineWidth=2; ctx.strokeRect(x,y,TILE_SIZE,TILE_SIZE); }
-function drawDot(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,3,0,Math.PI*2); ctx.fill(); }
-function drawPower(x,y){ ctx.fillStyle='#00D1FF'; ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,6,0,Math.PI*2); ctx.fill(); }
+/* ---------------- DRAW HELPERS (Base theme) ---------------- */
+function drawHex(x,y){
+  // glowing block for walls
+  ctx.fillStyle = '#031727';
+  ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
+  ctx.strokeStyle = 'rgba(0,210,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x+1,y+1,TILE_SIZE-2,TILE_SIZE-2);
+}
+function drawDot(x,y){
+  ctx.fillStyle = '#00d1ff';
+  ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,3,0,Math.PI*2); ctx.fill();
+}
+function drawPower(x,y,t=0){
+  // rotating-ish glowing square (Consensus Core)
+  const cx = x + TILE_SIZE/2, cy = y + TILE_SIZE/2;
+  const s = 6;
+  const rot = (t % 360) * Math.PI/180;
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(rot * 0.4);
+  ctx.fillStyle = 'rgba(0,210,255,0.92)';
+  ctx.fillRect(-s/2,-s/2,s,s);
+  ctx.restore();
+  // soft glow
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(0,210,255,0.06)';
+  ctx.arc(cx,cy,12,0,Math.PI*2);
+  ctx.fill();
+}
+function drawBlueCore(x,y,dir,mouthOpen,t=0){
+  // radial gradient core + subtle pulse
+  const cx = x + TILE_SIZE/2, cy = y + TILE_SIZE/2;
+  const rCore = 8;
+  const pulse = 0.92 + 0.08 * Math.sin(t * 0.12);
+  const g = ctx.createRadialGradient(cx,cy,1,cx,cy,rCore*2);
+  g.addColorStop(0,'rgba(255,255,255,0.95)');
+  g.addColorStop(0.15,'rgba(150,240,255,0.95)');
+  g.addColorStop(0.35,'rgba(0,208,255,0.9)');
+  g.addColorStop(1,'rgba(0,30,70,0.6)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx,cy,rCore * pulse,0,Math.PI*2); ctx.fill();
+  // outer aura
+  ctx.beginPath(); ctx.fillStyle = 'rgba(0,200,255,0.08)'; ctx.arc(cx,cy,rCore*3*pulse,0,Math.PI*2); ctx.fill();
+}
 function drawGhost(x,y,index,state){
-  const colors=['#FF4444','#00FF88','#00D1FF','#FFAA00'];
-  const syms=['Ξ','◎','⟠','⚌'];
-  const cx=x+TILE_SIZE/2, cy=y+TILE_SIZE/2;
-  ctx.fillStyle = (state==='vulnerable') ? '#0052FF' : colors[index % colors.length];
+  const colors = ['#ff6b6b','#9affb8','#6fdfff','#ffcf66'];
+  const syms = ['Ξ','◎','⟠','⚌'];
+  const cx = x + TILE_SIZE/2, cy = y + TILE_SIZE/2;
+  ctx.fillStyle = state === 'vulnerable' ? '#0052FF' : colors[index % colors.length];
   ctx.beginPath();
   ctx.arc(cx,cy-2,7,Math.PI,0,false);
   ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5);
   ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle='#FFFFFF';
+  ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=(state==='vulnerable')? '#0000FF':'#000000';
+  ctx.fillStyle = state === 'vulnerable' ? '#0000FF' : '#000';
   ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#000000'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(syms[index%syms.length], cx, cy+4);
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 8px Arial'; ctx.textAlign='center'; ctx.fillText(syms[index%syms.length], cx, cy+4);
 }
 
 /* ---------------- INIT ---------------- */
@@ -208,40 +230,43 @@ function init(){
   ctx = canvas.getContext('2d');
   document.getElementById('highScore').textContent = highScore;
   setupEventListeners();
-  drawStaticPreview(); // draw maze once so canvas isn't empty before start
+  drawPreview(); // draw preview so canvas isn't empty
 }
 
 function setupEventListeners(){
   document.getElementById('startButton').addEventListener('click', startGame);
   document.getElementById('restartButton').addEventListener('click', startGame);
   document.getElementById('claimMintBtn').addEventListener('click', claimMint);
-  document.getElementById('closeMintBtn').addEventListener('click', ()=>{ document.getElementById('mintBanner').classList.add('hidden'); });
+  document.getElementById('closeMintBtn').addEventListener('click', ()=>document.getElementById('mintBanner').classList.add('hidden'));
   document.addEventListener('keydown', handleKeyPress);
 }
 
-function drawStaticPreview(){
-  ctx.fillStyle='#0A0B0D'; ctx.fillRect(0,0,canvas.width,canvas.height);
+function drawPreview(){
+  ctx.fillStyle = '#07121a'; ctx.fillRect(0,0,canvas.width,canvas.height);
   for(let y=0;y<maze.length;y++){
     for(let x=0;x<maze[y].length;x++){
-      if(maze[y][x] === 1) drawHex(x*TILE_SIZE, y*TILE_SIZE);
-      else if(maze[y][x] === 0) drawDot(x*TILE_SIZE, y*TILE_SIZE);
-      else if(maze[y][x] === 2) drawPower(x*TILE_SIZE, y*TILE_SIZE);
+      if(maze[y][x] === 1) drawHex(x*TILE_SIZE,y*TILE_SIZE);
+      else if(maze[y][x] === 0) drawDot(x*TILE_SIZE,y*TILE_SIZE);
+      else if(maze[y][x] === 2) drawPower(x*TILE_SIZE,y*TILE_SIZE,0);
     }
   }
 }
 
-/* ---------------- CONTROL ---------------- */
+/* ---------------- GAME CONTROL ---------------- */
 function startGame(){
   gameActive = true;
   document.getElementById('gameStart').classList.add('hidden');
   document.getElementById('gameOver').classList.add('hidden');
   resetGame();
   if(animationId) cancelAnimationFrame(animationId);
-  gameLoop(0);
+  animationId = requestAnimationFrame(gameLoop);
 }
 
 function resetGame(){
-  score = 0; lives = 3; powerMode = false; powerTimer = 0;
+  score = 0;
+  lives = 3;
+  powerMode = false;
+  powerTimer = 0;
   dots = []; powerPellets = []; walls = [];
   for(let y=0;y<maze.length;y++){
     for(let x=0;x<maze[y].length;x++){
@@ -251,29 +276,28 @@ function resetGame(){
       else if(v === 1) walls.push({x:x*TILE_SIZE, y:y*TILE_SIZE});
     }
   }
-
-  pacman.x = 14 * TILE_SIZE; pacman.y = 23 * TILE_SIZE;
-  pacman.direction = 'right'; pacman.nextDirection = 'right'; pacman.mouthOpen=0; pacman.mouthDir=1;
+  pacman.x = 14*TILE_SIZE; pacman.y = 23*TILE_SIZE;
+  pacman.direction = 'right'; pacman.nextDirection = 'right'; pacman.mouthOpen = 0; pacman.mouthDir = 1;
 
   ghosts = [
-    {x:13*TILE_SIZE,y:11*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
-    {x:14*TILE_SIZE,y:11*TILE_SIZE,direction:'up',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
-    {x:15*TILE_SIZE,y:11*TILE_SIZE,direction:'right',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION},
-    {x:13*TILE_SIZE,y:14*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION}
+    {x:13*TILE_SIZE,y:11*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION, lastDirChangeTick:0},
+    {x:14*TILE_SIZE,y:11*TILE_SIZE,direction:'up',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION, lastDirChangeTick:0},
+    {x:15*TILE_SIZE,y:11*TILE_SIZE,direction:'right',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION, lastDirChangeTick:0},
+    {x:13*TILE_SIZE,y:14*TILE_SIZE,direction:'left',speed:GHOST_SPEED,state:'normal',respawnTimer:0,mode:'scatter',modeTimer:GHOST_SCATTER_DURATION, lastDirChangeTick:0}
   ];
 
-  updateHUD();
   document.getElementById('powerFill').style.width = '0%';
+  updateHUD();
 }
 
 /* ---------------- INPUT ---------------- */
 function handleKeyPress(e){
   if(!gameActive) return;
   switch(e.key){
-    case 'ArrowUp': pacman.nextDirection='up'; break;
-    case 'ArrowDown': pacman.nextDirection='down'; break;
-    case 'ArrowLeft': pacman.nextDirection='left'; break;
-    case 'ArrowRight': pacman.nextDirection='right'; break;
+    case 'ArrowUp': pacman.nextDirection = 'up'; break;
+    case 'ArrowDown': pacman.nextDirection = 'down'; break;
+    case 'ArrowLeft': pacman.nextDirection = 'left'; break;
+    case 'ArrowRight': pacman.nextDirection = 'right'; break;
   }
 }
 
@@ -285,39 +309,49 @@ function updateHUD(){
 }
 
 /* ---------------- GAME LOOP ---------------- */
-let loopTick = 0;
+let frameTick = 0;
 function gameLoop(ts){
   if(!gameActive) return;
-  loopTick++;
-  ctx.fillStyle = '#0A0B0D'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  frameTick++;
+  ctx.fillStyle = '#07121a'; ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // static
+  // draw maze
   walls.forEach(w => drawHex(w.x,w.y));
   dots.forEach(d => drawDot(d.x,d.y));
-  powerPellets.forEach(p => drawPower(p.x,p.y));
+  // pass frameTick into power draw for rotation
+  for(let i=0;i<powerPellets.length;i++){ drawPower(powerPellets[i].x, powerPellets[i].y, frameTick + i*10); }
 
-  // characters (pass loopTick for pulsing)
-  updatePacman(loopTick);
-  updateGhosts();
+  // update & draw
+  updatePacman(frameTick);
+  updateGhosts(frameTick);
 
-  // collisions and bar
+  // collisions & UI
   checkCollisions();
   updatePowerBar();
 
-  if(dots.length === 0 && powerPellets.length === 0){ levelComplete(); return; }
+  if(dots.length === 0 && powerPellets.length === 0){
+    score += 1000;
+    levelComplete();
+    return;
+  }
 
   animationId = requestAnimationFrame(gameLoop);
 }
 
-/* ---------------- MOVEMENT UTILS ---------------- */
+/* ---------------- MOVEMENT & COLLISIONS HELPERS ---------------- */
 function canMove(x,y,direction,speed){
-  let nx=x, ny=y;
-  switch(direction){ case 'up': ny-=speed; break; case 'down': ny+=speed; break; case 'left': nx-=speed; break; case 'right': nx+=speed; break; }
+  let nx = x, ny = y;
+  switch(direction){
+    case 'up': ny -= speed; break;
+    case 'down': ny += speed; break;
+    case 'left': nx -= speed; break;
+    case 'right': nx += speed; break;
+  }
   const corners = [
-    {x:nx+2,y:ny+2},
-    {x:nx+TILE_SIZE-2,y:ny+2},
-    {x:nx+2,y:ny+TILE_SIZE-2},
-    {x:nx+TILE_SIZE-2,y:ny+TILE_SIZE-2}
+    {x: nx + 2, y: ny + 2},
+    {x: nx + TILE_SIZE - 2, y: ny + 2},
+    {x: nx + 2, y: ny + TILE_SIZE - 2},
+    {x: nx + TILE_SIZE - 2, y: ny + TILE_SIZE - 2}
   ];
   for(const c of corners){
     const gx = Math.floor(c.x / TILE_SIZE);
@@ -328,13 +362,18 @@ function canMove(x,y,direction,speed){
   return true;
 }
 
-/* ---------------- PACMAN ---------------- */
+/* ---------------- PACMAN UPDATE ---------------- */
 function updatePacman(t){
+  // mouth animation
   pacman.mouthOpen += 0.12 * pacman.mouthDir;
   if(pacman.mouthOpen >= 1 || pacman.mouthOpen <= 0) pacman.mouthDir *= -1;
 
-  if(canMove(pacman.x, pacman.y, pacman.nextDirection, pacman.speed)) pacman.direction = pacman.nextDirection;
+  // attempt to change direction if possible
+  if(canMove(pacman.x, pacman.y, pacman.nextDirection, pacman.speed)){
+    pacman.direction = pacman.nextDirection;
+  }
 
+  // move in direction if allowed
   if(canMove(pacman.x, pacman.y, pacman.direction, pacman.speed)){
     switch(pacman.direction){
       case 'up': pacman.y -= pacman.speed; break;
@@ -344,75 +383,121 @@ function updatePacman(t){
     }
   }
 
-  if(pacman.x < -TILE_SIZE) pacman.x = CANVAS_WIDTH;
-  else if(pacman.x > CANVAS_WIDTH) pacman.x = -TILE_SIZE;
+  // tunnel wrap (left-right)
+  if(pacman.x < -TILE_SIZE) pacman.x = CANVAS_WIDTH - TILE_SIZE;
+  else if(pacman.x > CANVAS_WIDTH - TILE_SIZE) pacman.x = -TILE_SIZE + 0.5;
 
   drawBlueCore(pacman.x, pacman.y, pacman.direction, pacman.mouthOpen, t);
 }
 
-/* ---------------- GHOST AI & RESPAWN (scatter/chase/vulnerable) ---------------- */
-function updateGhosts(){
+/* ---------------- GHOSTS: improved AI + respawn ---------------- */
+function updateGhosts(t){
   ghosts.forEach((g,idx) => {
+    // If eaten: wait respawnTimer, then move back to lair gradually
     if(g.state === 'eaten'){
-      if(g.respawnTimer > 0){ g.respawnTimer--; }
-      else {
+      if(g.respawnTimer > 0){
+        g.respawnTimer--;
+      } else {
         const lairX = 13*TILE_SIZE + (idx % 2) * TILE_SIZE;
         const lairY = (idx === 3 ? 14 : 11) * TILE_SIZE;
         const dx = lairX - g.x, dy = lairY - g.y;
-        const d = Math.hypot(dx, dy);
+        const d = Math.hypot(dx,dy);
         const step = Math.min(g.speed, d);
-        if(d > 1){ g.x += (dx / d) * step; g.y += (dy / d) * step; drawGhost(g.x,g.y,idx,true); return; }
-        else { g.x=lairX; g.y=lairY; g.state='normal'; g.mode='scatter'; g.modeTimer=GHOST_SCATTER_DURATION; }
+        if(d > 1){
+          g.x += (dx / d) * step;
+          g.y += (dy / d) * step;
+          drawGhost(g.x, g.y, idx, true);
+          return;
+        } else {
+          g.x = lairX; g.y = lairY; g.state = 'normal';
+          g.mode = 'scatter'; g.modeTimer = GHOST_SCATTER_DURATION;
+        }
       }
     }
 
+    // set vulnerable if powerMode active
     if(powerMode && g.state !== 'eaten') g.state = 'vulnerable';
     else if(g.state !== 'eaten') g.state = 'normal';
 
-    if(!g.mode) g.mode='scatter';
+    // mode timers
+    if(!g.mode) g.mode = 'scatter';
     if(typeof g.modeTimer !== 'number') g.modeTimer = GHOST_SCATTER_DURATION;
     g.modeTimer--;
     if(g.modeTimer <= 0){
-      if(g.mode === 'scatter'){ g.mode='chase'; g.modeTimer = GHOST_CHASE_DURATION; }
-      else { g.mode='scatter'; g.modeTimer = GHOST_SCATTER_DURATION; }
+      if(g.mode === 'scatter'){ g.mode = 'chase'; g.modeTimer = GHOST_CHASE_DURATION; }
+      else { g.mode = 'scatter'; g.modeTimer = GHOST_SCATTER_DURATION; }
     }
 
-    let targetX, targetY;
-    if(g.state === 'vulnerable'){
-      targetX = CANVAS_WIDTH - pacman.x; targetY = CANVAS_HEIGHT - pacman.y;
-    } else if(g.mode === 'chase'){ targetX = pacman.x; targetY = pacman.y; }
-    else {
-      const corners = [
-        {x:0, y:0},
-        {x:CANVAS_WIDTH - TILE_SIZE, y:0},
-        {x:CANVAS_WIDTH - TILE_SIZE, y:CANVAS_HEIGHT - TILE_SIZE},
-        {x:0, y:CANVAS_HEIGHT - TILE_SIZE}
-      ];
-      targetX = corners[idx].x; targetY = corners[idx].y;
+    // Decide when to pick a new direction:
+    const centered = isCentered(g);
+    const now = t || frameTick;
+    // prevent too-frequent direction changes: require center or > 20 frames since last change
+    const canConsider = centered || (now - (g.lastDirChangeTick || 0) > 20);
+
+    if(canConsider){
+      // choose target (chase / scatter / flee)
+      let targetX, targetY;
+      if(g.state === 'vulnerable'){
+        targetX = CANVAS_WIDTH - pacman.x;
+        targetY = CANVAS_HEIGHT - pacman.y;
+      } else if(g.mode === 'chase'){
+        targetX = pacman.x; targetY = pacman.y;
+      } else {
+        const corners = [
+          {x: 0, y: 0},
+          {x: CANVAS_WIDTH - TILE_SIZE, y: 0},
+          {x: CANVAS_WIDTH - TILE_SIZE, y: CANVAS_HEIGHT - TILE_SIZE},
+          {x: 0, y: CANVAS_HEIGHT - TILE_SIZE}
+        ];
+        targetX = corners[idx].x; targetY = corners[idx].y;
+      }
+
+      // evaluate directions
+      const dirs = ['up','down','left','right'];
+      let bestDir = g.direction;
+      let bestMetric = (g.state === 'vulnerable') ? -Infinity : Infinity;
+
+      dirs.forEach(d => {
+        if(!canMove(g.x, g.y, d, g.speed)) return;
+        let nx = g.x, ny = g.y;
+        switch(d){ case 'up': ny -= g.speed; break; case 'down': ny += g.speed; break; case 'left': nx -= g.speed; break; case 'right': nx += g.speed; break; }
+        const distance = dist(nx,ny,targetX,targetY);
+        if(g.state === 'vulnerable'){
+          if(distance > bestMetric){ bestMetric = distance; bestDir = d; }
+        } else {
+          if(distance < bestMetric){ bestMetric = distance; bestDir = d; }
+        }
+      });
+
+      // small chance to pick a random valid direction (but rare)
+      if(Math.random() < GHOST_RANDOM_TURN_CHANCE){
+        const valids = dirs.filter(d => canMove(g.x,g.y,d,g.speed));
+        if(valids.length) bestDir = valids[Math.floor(Math.random()*valids.length)];
+      }
+
+      if(bestDir !== g.direction){
+        g.direction = bestDir;
+        g.lastDirChangeTick = now;
+      }
     }
 
-    const dirs = ['up','down','left','right'];
-    let bestDir = g.direction;
-    let bestMetric = (g.state === 'vulnerable') ? -Infinity : Infinity;
-
-    dirs.forEach(d => {
-      if(!canMove(g.x, g.y, d, g.speed)) return;
-      let nx=g.x, ny=g.y;
-      switch(d){ case 'up': ny-=g.speed; break; case 'down': ny+=g.speed; break; case 'left': nx-=g.speed; break; case 'right': nx+=g.speed; break; }
-      const distance = dist(nx,ny,targetX,targetY);
-      if(g.state === 'vulnerable'){ if(distance > bestMetric) { bestMetric = distance; bestDir = d; } }
-      else { if(distance < bestMetric) { bestMetric = distance; bestDir = d; } }
-    });
-
-    g.direction = bestDir;
-
-    if(canMove(g.x, g.y, g.direction, g.speed)){
-      const sp = (g.state === 'vulnerable') ? g.speed * 0.5 : g.speed;
-      switch(g.direction){ case 'up': g.y -= sp; break; case 'down': g.y += sp; break; case 'left': g.x -= sp; break; case 'right': g.x += sp; break; }
+    // Move ghost according to direction
+    if(canMove(g.x,g.y,g.direction,g.speed)){
+      const sp = (g.state === 'vulnerable') ? g.speed * 0.55 : g.speed;
+      switch(g.direction){
+        case 'up': g.y -= sp; break;
+        case 'down': g.y += sp; break;
+        case 'left': g.x -= sp; break;
+        case 'right': g.x += sp; break;
+      }
+    } else {
+      // If cannot move, mark lastDirChangeTick so AI won't immediately try again wildly
+      g.lastDirChangeTick = (g.lastDirChangeTick || frameTick);
     }
 
-    if(g.x < -TILE_SIZE) g.x = CANVAS_WIDTH;
-    else if(g.x > CANVAS_WIDTH) g.x = -TILE_SIZE;
+    // wrap edges
+    if(g.x < -TILE_SIZE) g.x = CANVAS_WIDTH - TILE_SIZE;
+    else if(g.x > CANVAS_WIDTH - TILE_SIZE) g.x = -TILE_SIZE + 0.5;
 
     drawGhost(g.x, g.y, idx, g.state === 'vulnerable');
   });
@@ -420,6 +505,7 @@ function updateGhosts(){
 
 /* ---------------- COLLISIONS ---------------- */
 function checkCollisions(){
+  // dots
   for(let i=dots.length-1;i>=0;i--){
     const d = dots[i];
     if(dist(d.x + TILE_SIZE/2, d.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2) < 10){
@@ -427,6 +513,7 @@ function checkCollisions(){
     }
   }
 
+  // power pellets
   for(let i=powerPellets.length-1;i>=0;i--){
     const p = powerPellets[i];
     if(dist(p.x + TILE_SIZE/2, p.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2) < 12){
@@ -434,13 +521,14 @@ function checkCollisions(){
     }
   }
 
+  // ghosts
   ghosts.forEach(g => {
     if(g.state === 'eaten') return;
     const d = dist(g.x + TILE_SIZE/2, g.y + TILE_SIZE/2, pacman.x + TILE_SIZE/2, pacman.y + TILE_SIZE/2);
     if(d < 15){
       if(g.state === 'vulnerable'){
-        g.state='eaten';
-        g.respawnTimer = 60 + Math.floor(Math.random()*120); // 1-3s
+        g.state = 'eaten';
+        g.respawnTimer = 60 + Math.floor(Math.random() * 120); // 1-3s delay before moving back to lair
         score += 200;
         g.x = 13 * TILE_SIZE; g.y = 11 * TILE_SIZE;
       } else {
@@ -449,18 +537,17 @@ function checkCollisions(){
     }
   });
 
-  // check mint threshold
+  // mint threshold
   if(!mintUnlocked && score >= MINT_SCORE_THRESHOLD){
     mintUnlocked = true;
-    showMintBanner();
-    // Optionally: record unlocked event to your backend
+    document.getElementById('mintBanner').classList.remove('hidden');
   }
 
   updateHUD();
 
   if(dots.length === 0 && powerPellets.length === 0){
     score += 1000;
-    gameOver(true);
+    levelComplete();
   }
 }
 
@@ -495,11 +582,19 @@ function loseLife(){
   gameActive = false;
   lives--; updateHUD();
   if(lives <= 0){ gameOver(); return; }
-  pacman.x = 14 * TILE_SIZE; pacman.y = 23 * TILE_SIZE; pacman.direction='right'; pacman.nextDirection='right';
-  ghosts.forEach((g,idx)=>{ if(g.state !== 'eaten'){ g.x = (13 + idx) * TILE_SIZE; g.y = 11 * TILE_SIZE; g.state='normal'; g.mode='scatter'; g.modeTimer=GHOST_SCATTER_DURATION; } });
-  setTimeout(()=>{ gameActive = true; if(animationId) cancelAnimationFrame(animationId); gameLoop(); }, 700);
+  // reset positions (preserve eaten ghosts)
+  pacman.x = 14 * TILE_SIZE; pacman.y = 23 * TILE_SIZE; pacman.direction = 'right'; pacman.nextDirection = 'right';
+  ghosts.forEach((g,idx) => {
+    if(g.state !== 'eaten'){
+      g.x = (13 + idx) * TILE_SIZE; g.y = 11 * TILE_SIZE; g.state = 'normal';
+      g.mode = 'scatter'; g.modeTimer = GHOST_SCATTER_DURATION;
+    }
+  });
+  setTimeout(()=>{ gameActive = true; if(animationId) cancelAnimationFrame(animationId); animationId = requestAnimationFrame(gameLoop); }, 700);
 }
+
 function levelComplete(){ score += 1000; gameOver(true); }
+
 function gameOver(win=false){
   gameActive = false;
   if(score > highScore){ highScore = score; localStorage.setItem('BlueManHighScore', highScore); }
@@ -510,22 +605,14 @@ function gameOver(win=false){
 }
 
 /* ---------------- MINT UI ---------------- */
-function showMintBanner(){
-  const banner = document.getElementById('mintBanner');
-  banner.classList.remove('hidden');
-  // It's intentionally non-blocking — user can claim now or later
-}
 function claimMint(){
-  // TODO: hook into your mint endpoint / Farcaster integration
-  // Example placeholder behavior:
-  alert('Mint flow placeholder — connect this button to your mint backend (Farcaster/Moralis/Alchemy/etc).');
-  // After success: optionally disable claim, or show transaction details
+  // Placeholder: connect this to your mint backend / Warpcast integration
+  alert('Mint flow placeholder — integrate your Base mint endpoint here.');
   document.getElementById('mintBanner').classList.add('hidden');
 }
 
-/* ---------------- UTILS ---------------- */
+/* ---------------- UTIL ---------------- */
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
 
 /* ---------------- START ---------------- */
 window.addEventListener('load', init);
