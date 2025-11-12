@@ -1,221 +1,521 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blue Man</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Blue Man — Digital Base Circuit</title>
+<style>
+  :root{
+    --bg-dark:#050814;
+    --accent:#00D1FF;
+    --bridge-purple:#4b4bf9;
+    --muted:#8fbfe6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:linear-gradient(180deg,#000814,var(--bg-dark));
+    color:var(--accent);
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow:hidden;
+  }
 
-    html, body {
-      background: radial-gradient(circle at center, #010018, #000);
-      overflow: hidden;
-      height: 100%;
-      font-family: 'Orbitron', sans-serif;
-      color: white;
-    }
+  /* Stage */
+  .stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 
-    canvas {
-      display: block;
-      margin: 0 auto;
-      background-color: #000;
-      border: 2px solid #1f51ff;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #1f51ff;
-    }
+  /* Canvas automatically scales (we keep internal logical size) */
+  #canvasWrap{width:100%;max-width:920px;height:calc(100vh - 40px);display:flex;align-items:center;justify-content:center}
+  canvas{background:transparent;border-radius:12px;display:block;max-width:100%;height:auto;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
 
-    /* Start button */
-    #startButton {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: linear-gradient(90deg, #00bfff, #1f51ff);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 24px;
-      font-weight: bold;
-      padding: 16px 48px;
-      cursor: pointer;
-      text-shadow: 0 0 10px #fff;
-      box-shadow: 0 0 15px #1f51ff;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      z-index: 15;
-    }
+  /* Start panel */
+  #startPanel{
+    position:absolute;z-index:30;display:flex;flex-direction:column;align-items:center;gap:14px;
+    background:rgba(4,8,20,0.7);padding:20px;border-radius:12px;backdrop-filter:blur(6px);
+    border:1px solid rgba(0,209,255,0.06);
+  }
+  #title{font-weight:800;color:#ffffff;font-size:22px;letter-spacing:0.6px;text-shadow:0 0 20px rgba(0,209,255,0.06)}
+  .tagline{color:rgba(255,255,255,0.9);font-size:14px;margin-top:6px}
+  .bridgeLogo{width:120px;filter:drop-shadow(0 0 8px rgba(75,75,249,0.9));animation:pulseGlow 2.2s ease-in-out infinite}
+  @keyframes pulseGlow{
+    0%{transform:scale(1);filter:drop-shadow(0 0 8px rgba(75,75,249,0.6))}
+    50%{transform:scale(1.04);filter:drop-shadow(0 0 20px rgba(0,209,255,0.9))}
+    100%{transform:scale(1);filter:drop-shadow(0 0 8px rgba(75,75,249,0.6))}
+  }
+  .startBtn{background:linear-gradient(90deg,var(--accent),#0066ff);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,209,255,0.12)}
+  .startRow{display:flex;gap:10px;align-items:center}
 
-    #startButton:hover {
-      transform: translate(-50%, -50%) scale(1.05);
-      box-shadow: 0 0 25px #00bfff;
-    }
+  /* watermark (small base wordmark) */
+  .watermark{position:absolute;right:14px;bottom:12px;width:56px;opacity:0;transition:opacity .9s ease;filter:drop-shadow(0 0 6px rgba(0,209,255,0.6));z-index:12}
 
-    /* Logo container */
-    .logo-container {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 30;
-      animation: fadeOut 2.5s ease 3s forwards;
-    }
+  /* mobile controls - visible only on narrow screens */
+  .controls{position:absolute;left:14px;bottom:12px;z-index:40;display:none;gap:8px}
+  .row{display:flex;gap:8px;justify-content:center}
+  .dBtn{width:68px;height:68px;border-radius:12px;border:1px solid rgba(0,209,255,0.14);background:linear-gradient(180deg,rgba(0,209,255,0.06),rgba(0,209,255,0.02));display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:800;font-size:20px;box-shadow:0 8px 18px rgba(0,209,255,0.04)}
+  .dBtn:active{transform:scale(0.98)}
 
-    .base-logo, .bridge-logo {
-      height: 40px;
-      filter: drop-shadow(0 0 10px #1f51ff);
-    }
+  @media (max-width:767px){
+    .controls{display:block}
+  }
 
-    .tagline {
-      font-size: 15px;
-      color: #ffffffcc;
-      text-shadow: 0 0 6px #1f51ff;
-    }
-
-    @keyframes fadeOut {
-      to { opacity: 0; visibility: hidden; }
-    }
-  </style>
+  /* rotation hint for portrait phones (we prefer landscape) */
+  #rotateOverlay{position:fixed;inset:0;background:rgba(0,0,6,0.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#fff;font-weight:700;z-index:60;padding:20px;display:none}
+  #rotateOverlay.visible{display:flex}
+</style>
 </head>
 <body>
-  <!-- Logos + tagline -->
-  <div class="logo-container">
-    <img src="img/base.png" alt="Base Logo" class="base-logo" />
-    <img src="img/bridge.png" alt="Bridge Logo" class="bridge-logo" />
-    <p class="tagline">Base is for everyone</p>
+  <div class="stage">
+    <div id="canvasWrap">
+      <canvas id="gameCanvas" width="560" height="620"></canvas>
+    </div>
+
+    <!-- Start panel with bridge logo (purple) and tagline -->
+    <div id="startPanel">
+      <div id="title">🟦 BLUE MAN — Base Runner</div>
+      <div class="tagline">Base is for everyone</div>
+      <img src="img/bridge.png" alt="Bridge Logo" class="bridgeLogo" id="bridgeLogo" onerror="logoError('bridge')">
+      <div class="startRow">
+        <button id="startBtn" class="startBtn">START GAME</button>
+      </div>
+    </div>
+
+    <!-- watermark wordmark (small) -->
+    <img src="img/base.png" alt="Base wordmark" class="watermark" id="wordmark" onerror="logoError('base')">
+
+    <!-- mobile dpad -->
+    <div class="controls" id="controls">
+      <div class="row"><button class="dBtn" data-dir="up">▲</button></div>
+      <div class="row">
+        <button class="dBtn" data-dir="left">◀</button>
+        <div style="width:18px"></div>
+        <button class="dBtn" data-dir="right">▶</button>
+      </div>
+      <div class="row"><button class="dBtn" data-dir="down">▼</button></div>
+    </div>
+
+    <!-- rotate to landscape overlay -->
+    <div id="rotateOverlay">Rotate your device to landscape for the best experience</div>
   </div>
 
-  <!-- Start button -->
-  <button id="startButton">Start Game</button>
-  
-  <!-- Game canvas -->
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+/* ---------------- Configuration & State ---------------- */
+const VW = 560, VH = 620;            // logical internal resolution
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-      const startButton = document.getElementById("startButton");
+let scale = 1;                       // visual scale applied to canvas element
+let gameActive = false;
+let safeStartFrames = 72;            // ~1.2s at 60fps before ghosts can collide
+let frame = 0;
 
-      let gameRunning = false;
-      let player = { x: 390, y: 290, size: 20, speed: 4 };
-      let ghosts = [];
-      const ghostCount = 4;
+// Player (Blue Man)
+const player = {
+  x: VW/2, y: VH - 80, r: 9, speed: 3.0,
+  trail: [], trailLen: 10
+};
 
-      // Create ghost objects
-      function createGhosts() {
-        ghosts = [];
-        for (let i = 0; i < ghostCount; i++) {
-          ghosts.push({
-            x: Math.random() * 760 + 20,
-            y: Math.random() * 560 + 20,
-            size: 20,
-            speed: 2.5,
-            dx: Math.random() > 0.5 ? 1 : -1,
-            dy: Math.random() > 0.5 ? 1 : -1,
-          });
-        }
-      }
+// Ghosts
+const GHOST_COLORS = ['#ff6b6b','#9affb8','#6fdfff','#ffcf66'];
+let ghosts = [];
 
-      // Draw player
-      function drawPlayer() {
-        ctx.beginPath();
-        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-        ctx.fillStyle = "#00bfff";
-        ctx.shadowColor = "#1f51ff";
-        ctx.shadowBlur = 15;
-        ctx.fill();
-        ctx.closePath();
-        ctx.shadowBlur = 0;
-      }
+// Background (circuit/grid) animation
+let gridPhase = 0;
 
-      // Draw ghosts
-      function drawGhosts() {
-        ghosts.forEach(g => {
-          ctx.beginPath();
-          ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2);
-          ctx.fillStyle = "purple";
-          ctx.fill();
-          ctx.closePath();
-        });
-      }
+// HUD / DOM
+const startPanel = document.getElementById('startPanel');
+const startBtn = document.getElementById('startBtn');
+const wordmark = document.getElementById('wordmark');
+const bridgeLogo = document.getElementById('bridgeLogo');
+const controls = document.getElementById('controls');
+const rotateOverlay = document.getElementById('rotateOverlay');
 
-      // Move ghosts
-      function moveGhosts() {
-        ghosts.forEach(g => {
-          g.x += g.dx * g.speed;
-          g.y += g.dy * g.speed;
-          if (g.x <= 10 || g.x >= 790) g.dx *= -1;
-          if (g.y <= 10 || g.y >= 590) g.dy *= -1;
-        });
-      }
+/* ---------------- Helper utilities ---------------- */
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
+function isMobile(){ return window.innerWidth <= 767; }
 
-      // Player movement
-      const keys = {};
-      document.addEventListener("keydown", e => keys[e.key] = true);
-      document.addEventListener("keyup", e => keys[e.key] = false);
+/* ---------------- Canvas/responsive sizing ---------------- */
+function fitCanvas(){
+  // fit the canvas into its container width while preserving logical resolution
+  const wrap = document.getElementById('canvasWrap');
+  const maxW = Math.min(wrap.clientWidth, 920);
+  scale = Math.min(maxW / VW, (window.innerHeight - 40) / VH);
+  // Set CSS size (visual) but keep internal drawing resolution fixed
+  canvas.style.width = Math.round(VW * scale) + 'px';
+  canvas.style.height = Math.round(VH * scale) + 'px';
+  // internal logical resolution remains VW x VH
+}
+window.addEventListener('resize', ()=>{
+  fitCanvas();
+  checkOrientation();
+});
+fitCanvas();
 
-      function movePlayer() {
-        if (keys["ArrowUp"]) player.y -= player.speed;
-        if (keys["ArrowDown"]) player.y += player.speed;
-        if (keys["ArrowLeft"]) player.x -= player.speed;
-        if (keys["ArrowRight"]) player.x += player.speed;
+/* ---------------- Logos error handling ---------------- */
+function logoError(which){
+  // if logos failed to load, hide element to avoid broken icon
+  if(which === 'bridge' && bridgeLogo) bridgeLogo.style.display = 'none';
+  if(which === 'base' && wordmark) wordmark.style.display = 'none';
+}
 
-        // Wrap-around (teleport to opposite edge)
-        if (player.x < 0) player.x = 800;
-        if (player.x > 800) player.x = 0;
-        if (player.y < 0) player.y = 600;
-        if (player.y > 600) player.y = 0;
-      }
-
-      // Collision detection
-      function detectCollision() {
-        ghosts.forEach(g => {
-          const dx = player.x - g.x;
-          const dy = player.y - g.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < player.size + g.size - 5) {
-            gameOver();
-          }
-        });
-      }
-
-      // Game loop
-      function gameLoop() {
-        if (!gameRunning) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        movePlayer();
-        moveGhosts();
-        detectCollision();
-        drawPlayer();
-        drawGhosts();
-        requestAnimationFrame(gameLoop);
-      }
-
-      function startGame() {
-        startButton.style.display = "none";
-        createGhosts();
-        gameRunning = true;
-        gameLoop();
-      }
-
-      function gameOver() {
-        gameRunning = false;
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(0, 0, 800, 600);
-        ctx.fillStyle = "#fff";
-        ctx.font = "40px Orbitron";
-        ctx.textAlign = "center";
-        ctx.fillText("Game Over", 400, 300);
-        setTimeout(() => { startButton.style.display = "block"; }, 2000);
-      }
-
-      startButton.addEventListener("click", startGame);
+/* ---------------- Start / Init functions ---------------- */
+function initGame(){
+  // reset state
+  frame = 0;
+  gameActive = true;
+  player.x = VW/2; player.y = VH - 80; player.trail = [];
+  // spawn ghosts with stagger and gentle AI variables
+  ghosts = [];
+  const basePositions = [
+    {x: 13*20, y: 11*20},
+    {x: 14*20, y: 11*20},
+    {x: 15*20, y: 11*20},
+    {x: 13*20, y: 14*20}
+  ];
+  for(let i=0;i<4;i++){
+    ghosts.push({
+      x: basePositions[i].x + (Math.random()*8-4),
+      y: basePositions[i].y + (Math.random()*8-4),
+      vx: (Math.random()*2-1)*0.4, vy:(Math.random()*2-1)*0.4,
+      speed: 1.6 + i*0.12, color:GHOST_COLORS[i], trail:[], trailLen:8,
+      state:'normal', respawn:0, wobbleSeed: Math.random()*9999
     });
-  </script>
+  }
+
+  // show watermark after start (soft)
+  setTimeout(()=>{ if(wordmark) wordmark.style.opacity = 0.22; }, 300);
+
+  // safeStart frames allow player to read and not be instantly eaten
+  safeStartFrames = Math.max(60, Math.floor(60 * 1.2)); // ~1.2s
+}
+
+/* fade logos and hide start panel */
+startBtn.addEventListener('click', ()=>{
+  startPanel.style.transition = 'opacity .9s ease';
+  startPanel.style.opacity = 0;
+  setTimeout(()=>{ startPanel.style.display = 'none'; }, 950);
+  initGame();
+  requestAnimationFrame(loop);
+});
+
+/* ---------------- Input: keyboard + touch D-pad ---------------- */
+const keys = {};
+window.addEventListener('keydown', (e)=>{ if(!gameActive && e.key === 'Enter'){ startBtn.click(); return; } keys[e.key] = true; });
+window.addEventListener('keyup', (e)=>{ keys[e.key] = false; });
+
+document.querySelectorAll('.dBtn').forEach(btn=>{
+  btn.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); const d=btn.dataset.dir; setDirection(d); });
+  btn.addEventListener('mousedown', ()=>{ const d=btn.dataset.dir; setDirection(d); });
+});
+function setDirection(dir){
+  // immediate direction application (no nextDirection queue; feel free to expand)
+  switch(dir){
+    case 'up': player.y -= player.speed * 3; break;
+    case 'down': player.y += player.speed * 3; break;
+    case 'left': player.x -= player.speed * 3; break;
+    case 'right': player.x += player.speed * 3; break;
+  }
+}
+
+/* ---------------- Background: digital circuit grid ---------------- */
+function drawCircuitBackground(t){
+  gridPhase += 0.006;
+  // base fill
+  ctx.fillStyle = '#00101b';
+  ctx.fillRect(0,0,VW,VH);
+
+  // subtle vertical + horizontal glowing lines grid
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for(let x=0;x<=VW;x+=20){
+    const glow = 0.06 + 0.04 * Math.sin((t*0.02) + x*0.03);
+    ctx.fillStyle = `rgba(0,210,255,${glow})`;
+    ctx.fillRect(x-0.4,0,0.8,VH);
+  }
+  for(let y=0;y<=VH;y+=20){
+    const glow = 0.03 + 0.03 * Math.cos((t*0.018) + y*0.02);
+    ctx.fillStyle = `rgba(0,120,200,${glow})`;
+    ctx.fillRect(0,y-0.4,VW,0.8);
+  }
+
+  // pulsing nodes
+  for(let x=10;x<VW;x+=60){
+    for(let y=10;y<VH;y+=60){
+      const r = 1.2 + 1.8 * Math.abs(Math.sin((t*0.01) + x*0.02 + y*0.01));
+      ctx.beginPath(); ctx.fillStyle = 'rgba(0,200,255,0.05)'; ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------- Draw Blue Man with pulsing core and trail ---------------- */
+function drawBlueMan(t){
+  // push current position into trail
+  player.trail.unshift({x:player.x, y:player.y});
+  if(player.trail.length > player.trailLen) player.trail.pop();
+
+  // trail (fading)
+  for(let i=player.trail.length-1;i>=0;i--){
+    const p = player.trail[i];
+    const alpha = 0.05 + 0.12 * (1 - i / player.trail.length);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(0,209,255,${alpha})`;
+    ctx.arc(p.x, p.y, player.r * (0.6 + i/player.trail.length*0.6), 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // core pulsing
+  const pulse = 1 + 0.08 * Math.sin(t * 0.12);
+  const cx = player.x, cy = player.y;
+  // aura
+  const g = ctx.createRadialGradient(cx,cy,1,cx,cy,player.r*4);
+  g.addColorStop(0, 'rgba(180,255,255,0.95)');
+  g.addColorStop(0.2, 'rgba(0,209,255,0.9)');
+  g.addColorStop(1, 'rgba(0,30,60,0.06)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx,cy,player.r*4*pulse,0,Math.PI*2); ctx.fill();
+
+  // body
+  ctx.beginPath();
+  ctx.fillStyle = '#00d1ff';
+  ctx.arc(cx,cy,player.r*1.05, 0, Math.PI*2);
+  ctx.fill();
+
+  // eye-like notch to give direction hint
+  ctx.beginPath();
+  ctx.fillStyle = '#041018';
+  ctx.arc(cx + (player.r*0.5), cy - (player.r*0.1), player.r*0.5, 0, Math.PI*2);
+  ctx.fill();
+}
+
+/* ---------------- Ghost drawing + movement (smoothed AI) ---------------- */
+function updateGhosts(t){
+  ghosts.forEach((g,idx)=>{
+    // small wobble so they don't sit exactly still
+    const wob = Math.sin((t*0.012) + g.wobbleSeed) * 0.5;
+
+    // Simple chase/flee logic: if power mode they'd run away (we don't yet have power mode in this build)
+    // Target: player position
+    const dx = player.x - g.x;
+    const dy = player.y - g.y;
+    const d = Math.hypot(dx,dy) || 1;
+
+    // small chance to wander
+    if(Math.random() < 0.01) {
+      g.vx += (Math.random()*2-1)*0.12;
+      g.vy += (Math.random()*2-1)*0.12;
+    }
+
+    // steer toward player (but with smoothing)
+    const steer = 0.016;
+    g.vx += (dx/d * g.speed - g.vx) * steer;
+    g.vy += (dy/d * g.speed - g.vy) * steer;
+
+    // limit
+    const sp = Math.hypot(g.vx, g.vy);
+    if(sp > g.speed) { g.vx = (g.vx/sp) * g.speed; g.vy = (g.vy/sp) * g.speed; }
+
+    // move
+    g.x += g.vx + wob*0.2;
+    g.y += g.vy + wob*0.2;
+
+    // keep inside canvas (wrap)
+    if(g.x < -10) g.x = VW + 10;
+    if(g.x > VW + 10) g.x = -10;
+    if(g.y < -10) g.y = VH + 10;
+    if(g.y > VH + 10) g.y = -10;
+
+    // trail
+    g.trail.unshift({x:g.x, y:g.y});
+    if(g.trail.length > g.trailLen) g.trail.pop();
+  });
+}
+
+function drawGhosts(t){
+  ghosts.forEach((g,idx)=>{
+    // trail
+    for(let i=g.trail.length-1;i>=0;i--){
+      const p = g.trail[i];
+      const a = 0.06 + 0.12 * (1 - i / g.trail.length);
+      ctx.beginPath(); ctx.fillStyle = hexToRgba(g.color, a); ctx.arc(p.x, p.y, g.size * (0.6 + i/g.trail.length*0.6), 0, Math.PI*2); ctx.fill();
+    }
+    // body
+    ctx.beginPath(); ctx.fillStyle = g.color; ctx.arc(g.x, g.y, g.size*0.9, Math.PI, Math.PI*2); ctx.lineTo(g.x + g.size*0.9, g.y + g.size*0.9); ctx.lineTo(g.x + g.size*0.3, g.y + g.size*0.6); ctx.lineTo(g.x - g.size*0.3, g.y + g.size*0.6); ctx.lineTo(g.x - g.size*0.9, g.y + g.size*0.9); ctx.closePath(); ctx.fill();
+    // eyes
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(g.x - g.size*0.35, g.y - g.size*0.25, g.size*0.22, 0, Math.PI*2); ctx.arc(g.x + g.size*0.15, g.y - g.size*0.25, g.size*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(g.x - g.size*0.35, g.y - g.size*0.25, g.size*0.12, 0, Math.PI*2); ctx.arc(g.x + g.size*0.15, g.y - g.size*0.25, g.size*0.12, 0, Math.PI*2); ctx.fill();
+  });
+}
+
+/* ---------------- Utility color helper ---------------- */
+function hexToRgba(hex, alpha){
+  const c = hex.replace('#','');
+  const r = parseInt(c.substring(0,2),16);
+  const g = parseInt(c.substring(2,4),16);
+  const b = parseInt(c.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ---------------- Player movement logic (keyboard and small smoothing) ---------------- */
+function updatePlayer(){
+  const speed = player.speed;
+  // keys
+  if(keys['ArrowUp'] || keys['w']) player.y -= speed;
+  if(keys['ArrowDown'] || keys['s']) player.y += speed;
+  if(keys['ArrowLeft'] || keys['a']) player.x -= speed;
+  if(keys['ArrowRight'] || keys['d']) player.x += speed;
+
+  // clamp to world & wrap horizontally like tunnels
+  if(player.x < -10) player.x = VW + 10;
+  if(player.x > VW + 10) player.x = -10;
+  if(player.y < -10) player.y = VH + 10;
+  if(player.y > VH + 10) player.y = -10;
+
+  // keep inside softly
+  player.x = clamp(player.x, 2, VW-2);
+  player.y = clamp(player.y, 2, VH-2);
+}
+
+/* ---------------- Collision detection (safeStart prevents instant death) ---------------- */
+function checkCollisions(){
+  if(frame < safeStartFrames) return; // safe period
+  for(let i=0;i<ghosts.length;i++){
+    const g = ghosts[i];
+    const d = dist(player.x, player.y, g.x, g.y);
+    if(d < player.r + g.size * 0.6){
+      // player dies
+      gameOver();
+      return;
+    }
+  }
+}
+
+/* ---------------- Game Over */
+function gameOver(){
+  gameActive = false;
+  // show a soft overlay message
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle = '#ffffff'; ctx.font = '26px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('GAME OVER', VW/2, VH/2 - 10);
+  // fade watermark out
+  wordmark.style.opacity = 0;
+  // show start panel again after delay
+  setTimeout(()=>{
+    startPanel.style.display = 'flex'; startPanel.style.opacity = 1;
+  }, 1200);
+}
+
+/* ---------------- main loop ---------------- */
+function loop(ts){
+  if(!gameActive) return;
+  frame++;
+  const t = frame;
+
+  // background
+  drawCircuitBackground(t);
+
+  // update
+  updatePlayer();
+  updateGhosts(t);
+
+  // draw
+  drawBlueMan(t);
+  drawGhosts(t);
+
+  // collisions
+  checkCollisions();
+
+  // continue
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- Orientation check (landscape preferred) ---------------- */
+function checkOrientation(){
+  if(isMobile() && window.innerHeight > window.innerWidth){
+    rotateOverlay.classList.add('visible');
+  } else rotateOverlay.classList.remove('visible');
+}
+checkOrientation();
+
+/* ---------------- Show/hide mobile controls based on width */
+function refreshControls(){
+  if(isMobile()){
+    controls.style.display = 'block';
+  } else controls.style.display = 'none';
+}
+refreshControls();
+window.addEventListener('resize', refreshControls);
+
+/* ---------------- Initial pre-start preview render (draw once so canvas not empty) ---------------- */
+function preview(){
+  // fit canvas element size
+  fitCanvas();
+  // clear and draw background & a static Blue Man
+  ctx.clearRect(0,0,VW,VH);
+  drawCircuitBackground(0);
+  ctx.fillStyle = '#00222b';
+  ctx.fillRect(12,12, VW-24, VH-24);
+  // preview player
+  player.x = VW/2; player.y = VH - 80;
+  drawBlueMan(0);
+  // preview ghosts snapshot
+  createGhostsPreview();
+  drawGhosts(0);
+}
+function createGhostsPreview(){
+  ghosts = [];
+  for(let i=0;i<4;i++){
+    ghosts.push({
+      x: VW/2 + (i-1.5)*36,
+      y: VH/2 - 40,
+      vx:0, vy:0, speed:1.6, color:GHOST_COLORS[i], trail:[], trailLen:6, wobbleSeed: Math.random()*9999
+    });
+  }
+}
+
+/* ---------------- Kick-off preview */
+preview();
+
+/* ---------------- Utilities: initialize page assets, ensure images reachable --------------- */
+function ensureImages(){
+  // if the images exist and are visible, nothing to do.
+  // If not (broken image), logoError will hide them.
+  // We already attached onerror in HTML to hide broken icons.
+}
+ensureImages();
+
+/* ---------------- Start hook (enable Start button by revealing watermark later) -------------- */
+/* Make sure the start button is keyboard focusable; it's already attached above */
+/* Expose createGhosts to initGame used earlier */
+function createGhosts(){
+  // reposition and set random small velocities
+  const centers = [
+    {x: 13*20, y:11*20},
+    {x: 14*20, y:11*20},
+    {x: 15*20, y:11*20},
+    {x: 13*20, y:14*20}
+  ];
+  ghosts = centers.map((p,i)=>({
+    x: p.x + (Math.random()*12-6),
+    y: p.y + (Math.random()*12-6),
+    vx: (Math.random()*2-1)*0.6,
+    vy: (Math.random()*2-1)*0.6,
+    speed: 1.6 + i*0.08,
+    color: GHOST_COLORS[i],
+    trail: [], trailLen: 8,
+    wobbleSeed: Math.random()*9999
+  }));
+}
+
+/* expose startPanel Start button also to Enter key - already handled in keyboard listener above */
+
+/* ---------------- Start everything (no immediate game loop until start clicked) -------------- */
+window.addEventListener('load', ()=>{
+  fitCanvas();
+  checkOrientation();
+  refreshControls();
+});
+</script>
 </body>
 </html>
