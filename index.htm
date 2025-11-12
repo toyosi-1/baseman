@@ -2,25 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Blue Man</title>
+  <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+  <title>Blue Man Maze</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      background: radial-gradient(circle at center, #000010 0%, #000 100%);
-      font-family: 'Poppins', sans-serif;
       height: 100%;
+      background: radial-gradient(circle at center, #000010 0%, #000 100%);
+      overflow: hidden;
       touch-action: none;
+      font-family: 'Poppins', sans-serif;
     }
 
     #gameCanvas {
       display: block;
-      background-color: rgba(0, 10, 30, 0.9);
-      margin: 0 auto;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(0, 0, 255, 0.3);
+      margin: auto;
+      background: #000820;
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0, 120, 255, 0.4);
     }
 
     #startBtn {
@@ -28,26 +28,26 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 24px;
+      background: linear-gradient(145deg, #007bff, #0048ff);
       color: white;
-      background: #007bff;
+      font-size: 22px;
       border: none;
       border-radius: 12px;
       padding: 15px 35px;
       cursor: pointer;
       box-shadow: 0 0 20px rgba(0, 123, 255, 0.8);
-      transition: transform 0.2s, background 0.3s;
+      transition: 0.3s;
+      z-index: 5;
     }
-
     #startBtn:hover {
-      background: #0056b3;
       transform: translate(-50%, -50%) scale(1.05);
+      background: linear-gradient(145deg, #0066ff, #002aff);
     }
 
-    /* Mobile D-Pad */
+    /* D-Pad */
     #mobile-controls {
       position: fixed;
-      bottom: 50px;
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       width: 160px;
@@ -63,19 +63,19 @@
     .control-btn {
       width: 60px;
       height: 60px;
-      background: rgba(0, 123, 255, 0.3);
-      border: 2px solid rgba(0, 123, 255, 0.7);
+      background: rgba(0, 123, 255, 0.2);
+      border: 2px solid rgba(0, 123, 255, 0.6);
       border-radius: 12px;
       color: white;
-      font-size: 18px;
+      font-size: 20px;
       text-align: center;
       line-height: 60px;
       user-select: none;
-      box-shadow: 0 0 10px rgba(0, 123, 255, 0.6);
+      box-shadow: 0 0 12px rgba(0, 123, 255, 0.6);
     }
 
     .control-btn:active {
-      background: rgba(0, 123, 255, 0.7);
+      background: rgba(0, 123, 255, 0.8);
     }
   </style>
 </head>
@@ -97,55 +97,60 @@
     const ctx = canvas.getContext("2d");
 
     let width, height;
-    let fixedHeight = window.innerHeight;
-    function resize(initial = false) {
+    function resizeCanvas() {
       width = window.innerWidth;
-      if (initial) fixedHeight = window.innerHeight;
-      height = fixedHeight;
+      height = window.innerHeight;
       canvas.width = width;
       canvas.height = height;
     }
-    resize(true);
-    window.addEventListener("orientationchange", () => setTimeout(() => resize(true), 500));
+    resizeCanvas();
 
-    let gameStarted = false;
-    const player = { x: 150, y: 150, size: 15, speed: 3, dx: 0, dy: 0, color: "#00aaff" };
+    window.addEventListener("resize", resizeCanvas);
 
-    const cellSize = 40;
-    const walls = [];
+    const player = {
+      x: 100,
+      y: 100,
+      size: 15,
+      dx: 0,
+      dy: 0,
+      speed: 3
+    };
+
+    const cellSize = 50;
+    let maze = [];
+
     function generateMaze() {
-      walls.length = 0;
+      maze = [];
       for (let x = 0; x < width; x += cellSize) {
         for (let y = 0; y < height; y += cellSize) {
-          if (Math.random() > 0.8) walls.push({ x, y });
+          if (Math.random() > 0.7) maze.push({ x, y });
         }
       }
     }
 
     function drawMaze() {
-      ctx.strokeStyle = "rgba(0,255,255,0.2)";
-      ctx.lineWidth = 1;
+      ctx.fillStyle = "#0020ff";
+      maze.forEach(block => {
+        ctx.fillRect(block.x, block.y, cellSize - 2, cellSize - 2);
+      });
+      ctx.strokeStyle = "rgba(0,255,255,0.3)";
       for (let x = 0; x < width; x += cellSize) {
         for (let y = 0; y < height; y += cellSize) {
           ctx.strokeRect(x, y, cellSize, cellSize);
         }
       }
-      walls.forEach(w => {
-        ctx.fillStyle = "rgba(0,100,255,0.4)";
-        ctx.fillRect(w.x, w.y, cellSize, cellSize);
-      });
     }
 
     function drawPlayer() {
-      const glow = ctx.createRadialGradient(player.x, player.y, 5, player.x, player.y, 30);
-      glow.addColorStop(0, "#00ccff");
+      const glow = ctx.createRadialGradient(player.x, player.y, 5, player.x, player.y, 25);
+      glow.addColorStop(0, "#00ffff");
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+      ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = player.color;
+      ctx.fillStyle = "#00aaff";
       ctx.beginPath();
       ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
       ctx.fill();
@@ -155,6 +160,20 @@
       player.x += player.dx;
       player.y += player.dy;
 
+      // Wall collisions
+      maze.forEach(block => {
+        if (
+          player.x + player.size > block.x &&
+          player.x - player.size < block.x + cellSize &&
+          player.y + player.size > block.y &&
+          player.y - player.size < block.y + cellSize
+        ) {
+          // Bounce back
+          player.x -= player.dx;
+          player.y -= player.dy;
+        }
+      });
+
       // Screen wrap
       if (player.x < 0) player.x = width;
       if (player.x > width) player.x = 0;
@@ -162,56 +181,55 @@
       if (player.y > height) player.y = 0;
     }
 
-    function gameLoop() {
+    function update() {
       ctx.clearRect(0, 0, width, height);
       drawMaze();
       movePlayer();
       drawPlayer();
-      requestAnimationFrame(gameLoop);
+      requestAnimationFrame(update);
     }
 
-    document.getElementById("startBtn").addEventListener("click", () => {
-      document.getElementById("startBtn").style.display = "none";
-      gameStarted = true;
-      generateMaze();
-      gameLoop();
-    });
-
-    // Keyboard controls
+    // Controls
     function keyDown(e) {
-      switch (e.key) {
-        case "ArrowRight": case "d": player.dx = player.speed; player.dy = 0; break;
-        case "ArrowLeft": case "a": player.dx = -player.speed; player.dy = 0; break;
-        case "ArrowUp": case "w": player.dy = -player.speed; player.dx = 0; break;
-        case "ArrowDown": case "s": player.dy = player.speed; player.dx = 0; break;
-      }
+      if (e.key === "ArrowUp" || e.key === "w") { player.dy = -player.speed; player.dx = 0; }
+      else if (e.key === "ArrowDown" || e.key === "s") { player.dy = player.speed; player.dx = 0; }
+      else if (e.key === "ArrowLeft" || e.key === "a") { player.dx = -player.speed; player.dy = 0; }
+      else if (e.key === "ArrowRight" || e.key === "d") { player.dx = player.speed; player.dy = 0; }
     }
+
     function keyUp(e) {
       if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"].includes(e.key)) {
-        player.dx = 0; player.dy = 0;
+        player.dx = 0;
+        player.dy = 0;
       }
     }
+
     document.addEventListener("keydown", keyDown);
     document.addEventListener("keyup", keyUp);
 
-    // Mobile detection
+    // Mobile controls
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const controls = document.getElementById("mobile-controls");
-    if (isMobile) controls.style.display = "flex";
+    if (isMobile) document.getElementById("mobile-controls").style.display = "flex";
 
-    // D-pad touch controls
-    const press = (dir) => {
-      switch(dir) {
-        case "up": player.dy = -player.speed; player.dx = 0; break;
-        case "down": player.dy = player.speed; player.dx = 0; break;
-        case "left": player.dx = -player.speed; player.dy = 0; break;
-        case "right": player.dx = player.speed; player.dy = 0; break;
-      }
-    };
-    ["up","down","left","right"].forEach(id => {
+    const dirs = ["up","down","left","right"];
+    dirs.forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("touchstart", () => press(id));
+      el.addEventListener("touchstart", () => {
+        switch(id) {
+          case "up": player.dy = -player.speed; player.dx = 0; break;
+          case "down": player.dy = player.speed; player.dx = 0; break;
+          case "left": player.dx = -player.speed; player.dy = 0; break;
+          case "right": player.dx = player.speed; player.dy = 0; break;
+        }
+      });
       el.addEventListener("touchend", () => { player.dx = 0; player.dy = 0; });
+    });
+
+    // Start button
+    document.getElementById("startBtn").addEventListener("click", () => {
+      document.getElementById("startBtn").style.display = "none";
+      generateMaze();
+      update();
     });
   </script>
 </body>
