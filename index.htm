@@ -1,301 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blue Man — Base Edition</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background-color: #000;
-    overflow: hidden;
-    font-family: 'Poppins', sans-serif;
-    touch-action: none;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blue Man</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  canvas {
-    display: block;
-    margin: 0 auto;
-    background-color: #000;
-  }
+    html, body {
+      background: radial-gradient(circle at center, #010018, #000);
+      overflow: hidden;
+      height: 100%;
+      font-family: 'Orbitron', sans-serif;
+      color: white;
+    }
 
-  /* Start Screen */
-  #startScreen {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: radial-gradient(circle at center, #000020, #000);
-    z-index: 5;
-  }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: #000;
+      border: 2px solid #1f51ff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #1f51ff;
+    }
 
-  #startScreen h1 {
-    color: #00D1FF;
-    font-size: 3em;
-    text-shadow: 0 0 15px #00D1FF;
-    margin-bottom: 0.5em;
-  }
+    /* Start button */
+    #startButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(90deg, #00bfff, #1f51ff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 16px 48px;
+      cursor: pointer;
+      text-shadow: 0 0 10px #fff;
+      box-shadow: 0 0 15px #1f51ff;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      z-index: 15;
+    }
 
-  #startScreen p {
-    color: #fff;
-    font-size: 1.2em;
-    opacity: 0.8;
-    margin-bottom: 1em;
-  }
+    #startButton:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+      box-shadow: 0 0 25px #00bfff;
+    }
 
-  .bridge-logo {
-    width: 120px;
-    margin-bottom: 20px;
-    animation: pulse 2s infinite alternate;
-    filter: drop-shadow(0 0 15px #00D1FF);
-  }
+    /* Logo container */
+    .logo-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 30;
+      animation: fadeOut 2.5s ease 3s forwards;
+    }
 
-  @keyframes pulse {
-    0% { transform: scale(1); opacity: 0.8; }
-    100% { transform: scale(1.05); opacity: 1; }
-  }
+    .base-logo, .bridge-logo {
+      height: 40px;
+      filter: drop-shadow(0 0 10px #1f51ff);
+    }
 
-  .start-button {
-    padding: 0.8em 1.5em;
-    background: linear-gradient(90deg, #00D1FF, #0044FF);
-    color: white;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    box-shadow: 0 0 15px #00D1FF;
-    transition: transform 0.2s;
-  }
+    .tagline {
+      font-size: 15px;
+      color: #ffffffcc;
+      text-shadow: 0 0 6px #1f51ff;
+    }
 
-  .start-button:hover {
-    transform: scale(1.05);
-  }
-
-  /* Base logo during gameplay */
-  .base-logo {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 60px;
-    opacity: 0;
-    filter: drop-shadow(0 0 8px #00D1FF);
-    transition: opacity 2s ease-in;
-    z-index: 2;
-  }
-
-  /* Mobile Controls */
-  #controls {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    z-index: 4;
-    display: none;
-  }
-
-  .btn {
-    width: 50px;
-    height: 50px;
-    border: 2px solid #00D1FF;
-    border-radius: 50%;
-    margin: 5px;
-    background-color: rgba(0, 0, 40, 0.4);
-    box-shadow: 0 0 10px #00D1FF;
-    color: #00D1FF;
-    font-size: 1.5em;
-    text-align: center;
-    line-height: 50px;
-    user-select: none;
-  }
-
-  @media (max-width: 768px) {
-    #controls { display: flex; flex-wrap: wrap; width: 130px; }
-  }
-</style>
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+  </style>
 </head>
 <body>
+  <!-- Logos + tagline -->
+  <div class="logo-container">
+    <img src="img/base.png" alt="Base Logo" class="base-logo" />
+    <img src="img/bridge.png" alt="Bridge Logo" class="bridge-logo" />
+    <p class="tagline">Base is for everyone</p>
+  </div>
 
-<div id="startScreen">
-  <h1>BLUE MAN</h1>
-  <p>Base is for everyone</p>
-  <img src="./bridge.png" alt="Bridge Logo" class="bridge-logo">
-  <button class="start-button" onclick="startGame()">Start</button>
-</div>
+  <!-- Start button -->
+  <button id="startButton">Start Game</button>
+  
+  <!-- Game canvas -->
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
-<img src="./base.png" alt="Base Logo" class="base-logo" id="baseLogo">
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const startButton = document.getElementById("startButton");
 
-<div id="controls">
-  <div class="btn" id="up">▲</div>
-  <div class="btn" id="left">◀</div>
-  <div class="btn" id="down">▼</div>
-  <div class="btn" id="right">▶</div>
-</div>
+      let gameRunning = false;
+      let player = { x: 390, y: 290, size: 20, speed: 4 };
+      let ghosts = [];
+      const ghostCount = 4;
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const startScreen = document.getElementById('startScreen');
-const baseLogo = document.getElementById('baseLogo');
-
-let gameRunning = false;
-let player = { x: 400, y: 300, size: 20, speed: 3 };
-let ghosts = [];
-let score = 0;
-let powerMode = false;
-let powerTimer = 0;
-
-// Maze + Warp edges setup
-function wrapPosition(entity) {
-  if (entity.x < 0) entity.x = canvas.width;
-  else if (entity.x > canvas.width) entity.x = 0;
-  if (entity.y < 0) entity.y = canvas.height;
-  else if (entity.y > canvas.height) entity.y = 0;
-}
-
-// Initialize ghosts
-for (let i = 0; i < 4; i++) {
-  ghosts.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    size: 18,
-    color: 'red',
-    vx: (Math.random() - 0.5) * 2,
-    vy: (Math.random() - 0.5) * 2
-  });
-}
-
-// Draw player
-function drawPlayer() {
-  ctx.fillStyle = '#00D1FF';
-  ctx.beginPath();
-  ctx.arc(player.x, player.y, player.size, 0.2 * Math.PI, 1.8 * Math.PI);
-  ctx.lineTo(player.x, player.y);
-  ctx.fill();
-}
-
-// Draw ghosts
-function drawGhosts() {
-  for (let g of ghosts) {
-    ctx.fillStyle = g.color;
-    ctx.beginPath();
-    ctx.arc(g.x, g.y, g.size, Math.PI, 2 * Math.PI);
-    ctx.lineTo(g.x - g.size, g.y);
-    ctx.fill();
-  }
-}
-
-// Move ghosts with smarter AI
-function moveGhosts() {
-  for (let g of ghosts) {
-    let dx = player.x - g.x;
-    let dy = player.y - g.y;
-    let dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (powerMode) {
-      g.vx -= dx / dist * 0.05;
-      g.vy -= dy / dist * 0.05;
-    } else {
-      g.vx += dx / dist * 0.05;
-      g.vy += dy / dist * 0.05;
-    }
-
-    // Limit speed
-    let speed = Math.sqrt(g.vx * g.vx + g.vy * g.vy);
-    if (speed > 2.5) {
-      g.vx *= 2.5 / speed;
-      g.vy *= 2.5 / speed;
-    }
-
-    g.x += g.vx;
-    g.y += g.vy;
-    wrapPosition(g);
-  }
-}
-
-// Collision detection
-function checkCollisions() {
-  for (let i = ghosts.length - 1; i >= 0; i--) {
-    let g = ghosts[i];
-    let dx = player.x - g.x;
-    let dy = player.y - g.y;
-    let dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < player.size + g.size - 5) {
-      if (powerMode) {
-        ghosts.splice(i, 1);
-        score += 500;
-      } else {
-        gameOver();
+      // Create ghost objects
+      function createGhosts() {
+        ghosts = [];
+        for (let i = 0; i < ghostCount; i++) {
+          ghosts.push({
+            x: Math.random() * 760 + 20,
+            y: Math.random() * 560 + 20,
+            size: 20,
+            speed: 2.5,
+            dx: Math.random() > 0.5 ? 1 : -1,
+            dy: Math.random() > 0.5 ? 1 : -1,
+          });
+        }
       }
-    }
-  }
-}
 
-// Game loop
-function gameLoop() {
-  if (!gameRunning) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Draw player
+      function drawPlayer() {
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fillStyle = "#00bfff";
+        ctx.shadowColor = "#1f51ff";
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.closePath();
+        ctx.shadowBlur = 0;
+      }
 
-  // Draw maze background glow
-  ctx.fillStyle = "rgba(0, 10, 40, 0.3)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw ghosts
+      function drawGhosts() {
+        ghosts.forEach(g => {
+          ctx.beginPath();
+          ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2);
+          ctx.fillStyle = "purple";
+          ctx.fill();
+          ctx.closePath();
+        });
+      }
 
-  moveGhosts();
-  drawGhosts();
-  drawPlayer();
-  checkCollisions();
+      // Move ghosts
+      function moveGhosts() {
+        ghosts.forEach(g => {
+          g.x += g.dx * g.speed;
+          g.y += g.dy * g.speed;
+          if (g.x <= 10 || g.x >= 790) g.dx *= -1;
+          if (g.y <= 10 || g.y >= 590) g.dy *= -1;
+        });
+      }
 
-  if (powerMode) {
-    powerTimer -= 1;
-    if (powerTimer <= 0) powerMode = false;
-  }
+      // Player movement
+      const keys = {};
+      document.addEventListener("keydown", e => keys[e.key] = true);
+      document.addEventListener("keyup", e => keys[e.key] = false);
 
-  requestAnimationFrame(gameLoop);
-}
+      function movePlayer() {
+        if (keys["ArrowUp"]) player.y -= player.speed;
+        if (keys["ArrowDown"]) player.y += player.speed;
+        if (keys["ArrowLeft"]) player.x -= player.speed;
+        if (keys["ArrowRight"]) player.x += player.speed;
 
-// Start game
-function startGame() {
-  startScreen.style.transition = "opacity 1s";
-  startScreen.style.opacity = 0;
-  setTimeout(() => startScreen.style.display = "none", 1000);
-  baseLogo.style.opacity = 0.3;
-  gameRunning = true;
-  gameLoop();
-}
+        // Wrap-around (teleport to opposite edge)
+        if (player.x < 0) player.x = 800;
+        if (player.x > 800) player.x = 0;
+        if (player.y < 0) player.y = 600;
+        if (player.y > 600) player.y = 0;
+      }
 
-// Game over
-function gameOver() {
-  gameRunning = false;
-  alert("Game Over! Score: " + score);
-  location.reload();
-}
+      // Collision detection
+      function detectCollision() {
+        ghosts.forEach(g => {
+          const dx = player.x - g.x;
+          const dy = player.y - g.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < player.size + g.size - 5) {
+            gameOver();
+          }
+        });
+      }
 
-// Mobile controls
-const btns = {
-  up: document.getElementById('up'),
-  down: document.getElementById('down'),
-  left: document.getElementById('left'),
-  right: document.getElementById('right')
-};
+      // Game loop
+      function gameLoop() {
+        if (!gameRunning) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        movePlayer();
+        moveGhosts();
+        detectCollision();
+        drawPlayer();
+        drawGhosts();
+        requestAnimationFrame(gameLoop);
+      }
 
-for (let dir in btns) {
-  btns[dir].addEventListener('touchstart', () => {
-    if (dir === 'up') player.y -= player.speed * 10;
-    if (dir === 'down') player.y += player.speed * 10;
-    if (dir === 'left') player.x -= player.speed * 10;
-    if (dir === 'right') player.x += player.speed * 10;
-  });
-}
+      function startGame() {
+        startButton.style.display = "none";
+        createGhosts();
+        gameRunning = true;
+        gameLoop();
+      }
 
-// Keyboard movement
-document.addEventListener('keydown', e => {
-  if (!gameRunning) return;
-  if (e.key === 'ArrowUp') player.y -= player.speed * 5;
-  if (e.key === 'ArrowDown') player.y += player.speed * 5;
-  if (e.key === 'ArrowLeft') player.x -= player.speed * 5;
-  if (e.key === 'ArrowRight') player.x += player.speed * 5;
-});
-</script>
+      function gameOver() {
+        gameRunning = false;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, 800, 600);
+        ctx.fillStyle = "#fff";
+        ctx.font = "40px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText("Game Over", 400, 300);
+        setTimeout(() => { startButton.style.display = "block"; }, 2000);
+      }
+
+      startButton.addEventListener("click", startGame);
+    });
+  </script>
 </body>
 </html>
