@@ -1,434 +1,219 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Blue Man — Base Runner (Playable)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blue Man</title>
 <style>
-  :root{--bg:#020617;--accent:#00D1FF;--bridge:#4b4bf9}
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:linear-gradient(180deg,#000814,var(--bg));font-family:Inter,Arial,sans-serif;color:var(--accent);-webkit-font-smoothing:antialiased}
-  .stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;padding:18px}
-  #canvasWrap{width:100%;max-width:920px;height:calc(100vh - 40px);display:flex;align-items:center;justify-content:center}
-  canvas{display:block;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6);background:transparent}
-  /* start panel */
-  #startPanel{position:absolute;z-index:40;display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(4,8,12,0.75);padding:18px;border-radius:10px;border:1px solid rgba(0,209,255,0.06)}
-  #title{font-weight:800;color:#fff;font-size:20px;letter-spacing:0.4px;text-shadow:0 0 12px rgba(0,209,255,0.08)}
-  .tagline{color:#dff9ff;opacity:.95;font-size:13px}
-  .bridgeLogo{width:120px;filter:drop-shadow(0 0 10px rgba(75,75,249,0.9));animation:pulse 2.2s ease-in-out infinite}
-  @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
-  .startBtn{background:linear-gradient(90deg,var(--accent),#0066ff);border:none;color:#fff;padding:10px 16px;border-radius:8px;font-weight:800;cursor:pointer}
-  /* watermark */
-  .watermark{position:absolute;right:14px;bottom:12px;width:56px;opacity:0;transition:opacity .8s ease;filter:drop-shadow(0 0 8px rgba(0,209,255,0.6));z-index:30}
-  /* HUD */
-  .hud{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;z-index:35;background:rgba(0,0,0,0.35);padding:8px 14px;border-radius:8px;border:1px solid rgba(0,209,255,0.06);display:flex;gap:18px;font-weight:700}
-  /* mobile controls */
-  .controls{position:absolute;left:14px;bottom:14px;z-index:45;display:none}
-  .row{display:flex;gap:8px}
-  .dBtn{width:64px;height:64px;border-radius:12px;border:1px solid rgba(0,209,255,0.12);background:linear-gradient(180deg,rgba(0,209,255,0.06),rgba(0,209,255,0.02));color:var(--accent);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:20px}
-  .dBtn:active{transform:scale(.98)}
-  @media(max-width:767px){ .controls{display:block} }
-  /* rotate overlay for portrait mobiles */
-  #rotateOverlay{position:fixed;inset:0;background:rgba(0,0,6,0.92);display:none;align-items:center;justify-content:center;z-index:60;color:#fff;font-weight:700;padding:20px;text-align:center}
-  #rotateOverlay.visible{display:flex}
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #000;
+    height: 100%;
+    width: 100%;
+  }
+
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, #001133 0%, #000 100%);
+    touch-action: none;
+  }
+
+  #mobile-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 100;
+  }
+
+  .dpad-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .btn {
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 100, 255, 0.3);
+    border: 2px solid #0ff;
+    border-radius: 15px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 10px #0ff;
+    color: #0ff;
+    font-size: 24px;
+    text-align: center;
+    line-height: 60px;
+    user-select: none;
+  }
+
+  #startBtn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(90deg, #00aaff, #0077ff);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 20px 40px;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px #0077ff;
+    transition: all 0.2s ease;
+    z-index: 50;
+  }
+  #startBtn:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 30px #00ccff;
+  }
 </style>
 </head>
 <body>
-<div class="stage">
-  <div id="canvasWrap">
-    <canvas id="gameCanvas" width="560" height="620" aria-label="Blue Man game"></canvas>
-  </div>
+  <button id="startBtn">Start Game</button>
+  <canvas id="gameCanvas"></canvas>
 
-  <!-- Start panel -->
-  <div id="startPanel" role="dialog" aria-modal="true">
-    <div id="title">🟦 BLUE MAN — Base Runner</div>
-    <div class="tagline">Base is for everyone</div>
-    <!-- bridge logo (purple). onerror hides broken icon -->
-    <img src="img/bridge.png" alt="Bridge Logo" class="bridgeLogo" id="bridgeLogo" onerror="this.style.display='none'">
-    <div style="display:flex;gap:8px">
-      <button id="startBtn" class="startBtn">START GAME</button>
+  <div id="mobile-controls">
+    <div class="dpad-row"><div class="btn" id="up">▲</div></div>
+    <div class="dpad-row">
+      <div class="btn" id="left">◀</div>
+      <div class="btn" id="down">▼</div>
+      <div class="btn" id="right">▶</div>
     </div>
   </div>
-
-  <!-- watermark -->
-  <img src="img/base.png" alt="Base wordmark" class="watermark" id="wordmark" onerror="this.style.display='none'">
-
-  <!-- HUD -->
-  <div class="hud" id="hud">
-    <div>SCORE: <span id="score">0</span></div>
-    <div>LIVES: <span id="lives">3</span></div>
-    <div>HIGH: <span id="highScore">0</span></div>
-    <div>POWER: <span id="powerVal">0</span></div>
-  </div>
-
-  <!-- mobile D-pad -->
-  <div class="controls" id="controls">
-    <div class="row"><button class="dBtn" data-dir="up">▲</button></div>
-    <div class="row">
-      <button class="dBtn" data-dir="left">◀</button>
-      <div style="width:12px"></div>
-      <button class="dBtn" data-dir="right">▶</button>
-    </div>
-    <div class="row"><button class="dBtn" data-dir="down">▼</button></div>
-  </div>
-
-  <div id="rotateOverlay">Rotate your device to landscape for the best experience</div>
-</div>
 
 <script>
-/* ========= Configuration ========= */
-const TILE = 20;
-const VW = 560, VH = 620;
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-let scale = 1;
-function fitCanvas(){
-  const wrap = document.getElementById('canvasWrap');
-  const maxW = Math.min(wrap.clientWidth, 920);
-  scale = Math.min(maxW / VW, (window.innerHeight - 40) / VH);
-  canvas.style.width = Math.round(VW * scale) + 'px';
-  canvas.style.height = Math.round(VH * scale) + 'px';
-  // logical resolution remains VWxVH
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let width, height;
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
 }
-window.addEventListener('resize', ()=>{ fitCanvas(); checkOrientation(); refreshControls(); });
-fitCanvas();
+window.addEventListener("resize", resize);
+resize();
 
-/* ========= Maze (same as original) ========= */
-const maze = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-  [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
-  [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-  [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-  [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-  [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-  [1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-  [1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-  [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-  [1,2,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,2,1],
-  [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
-  [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
-  [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
-  [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
-  [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
+let gameStarted = false;
 
-/* ========= Game state ========= */
-let dots = [], powerPellets = [], walls = [], ghosts = [];
-let pac = { x: 14*TILE + 0.5*TILE, y: 23*TILE + 0.5*TILE, speed: 3, dir: 'left', nextDir:'left', mouth:0, mouthDir:1 };
-let score = 0, lives = 3, high = parseInt(localStorage.getItem('basemanHigh')||'0');
-let powerMode = false, powerTimer = 0, POWER_FRAMES = 300; // ~5s at 60fps
-let animId = null;
-let frame = 0;
-const hudScore = document.getElementById('score'), hudLives = document.getElementById('lives'), hudHigh = document.getElementById('highScore'), hudPower = document.getElementById('powerVal');
-hudHigh && (hudHigh.textContent = high);
+const player = {
+  x: 100, y: 100, size: 15,
+  speed: 3, dx: 0, dy: 0,
+  color: "#00aaff"
+};
 
-/* ========= Helpers ========= */
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function d(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by)}
-
-/* ========= Build map objects ========= */
-function resetMap(){
-  dots = []; powerPellets = []; walls = [];
-  for(let y=0;y<maze.length;y++){
-    for(let x=0;x<maze[y].length;x++){
-      const v = maze[y][x];
-      if(v === 0) dots.push({x:x*TILE,y:y*TILE});
-      else if(v === 2) powerPellets.push({x:x*TILE,y:y*TILE});
-      else if(v === 1) walls.push({x:x*TILE,y:y*TILE});
+const walls = [];
+const cellSize = 40;
+function generateMaze() {
+  walls.length = 0;
+  for (let x = 0; x < width; x += cellSize) {
+    for (let y = 0; y < height; y += cellSize) {
+      if (Math.random() > 0.8) walls.push({x, y});
     }
   }
 }
 
-/* ========= Drawing helpers ========= */
-function drawCircuitBG(t){
-  // subtle dark grid
-  ctx.fillStyle = '#00121a';
-  ctx.fillRect(0,0,VW,VH);
-  ctx.save(); ctx.globalAlpha = 0.12;
-  ctx.strokeStyle = '#003040';
-  ctx.lineWidth = 1;
-  for(let x=0;x<=VW;x+=TILE){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,VH); ctx.stroke(); }
-  for(let y=0;y<=VH;y+=TILE){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(VW,y); ctx.stroke(); }
-  ctx.restore();
+function drawMaze() {
+  ctx.strokeStyle = "rgba(0,255,255,0.2)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x < width; x += cellSize) {
+    for (let y = 0; y < height; y += cellSize) {
+      ctx.strokeRect(x, y, cellSize, cellSize);
+    }
+  }
+  walls.forEach(w => {
+    ctx.fillStyle = "rgba(0,100,255,0.4)";
+    ctx.fillRect(w.x, w.y, cellSize, cellSize);
+  });
 }
 
-function drawWall(x,y){
-  ctx.fillStyle = '#002935';
-  ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
-  ctx.strokeStyle = 'rgba(0,209,255,0.03)'; ctx.lineWidth = 1;
-  ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-}
-
-function drawDot(x,y){
-  ctx.beginPath(); ctx.fillStyle = '#00D1FF'; ctx.arc(x+TILE/2,y+TILE/2,3,0,Math.PI*2); ctx.fill();
-}
-function drawPower(x,y,t){
-  const cx = x+TILE/2, cy = y+TILE/2;
-  ctx.beginPath(); ctx.fillStyle = '#00D1FF'; ctx.arc(cx,cy,6,0,Math.PI*2); ctx.fill();
-  ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.arc(cx,cy,14 + Math.sin(t*0.06)*2,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
-}
-
-function drawPac(x,y){
-  // aura
-  const cx = x+TILE/2, cy = y+TILE/2;
-  const pulse = 1 + 0.06*Math.sin(frame*0.12);
-  const g = ctx.createRadialGradient(cx,cy,1,cx,cy,18);
-  g.addColorStop(0,'rgba(180,255,255,0.95)');
-  g.addColorStop(0.2,'rgba(0,209,255,0.9)');
-  g.addColorStop(1,'rgba(0,30,60,0.06)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx,cy,16*pulse,0,Math.PI*2); ctx.fill();
-
-  // body
-  ctx.fillStyle = '#00d1ff';
+function drawPlayer() {
+  const glow = ctx.createRadialGradient(player.x, player.y, 5, player.x, player.y, 30);
+  glow.addColorStop(0, "#00ccff");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
   ctx.beginPath();
-  const mouth = 0.22 + (pac.mouth * 0.6);
-  let start=0,end=0;
-  const dir = pac.dir;
-  if(dir==='right'){ start = mouth; end = Math.PI*2 - mouth; }
-  else if(dir==='left'){ start = Math.PI + mouth; end = Math.PI - mouth; }
-  else if(dir==='up'){ start = Math.PI*1.5 + mouth; end = Math.PI*1.5 - mouth; }
-  else { start = Math.PI*0.5 + mouth; end = Math.PI*0.5 - mouth; }
-  ctx.moveTo(cx,cy); ctx.arc(cx,cy,10,start,end); ctx.closePath(); ctx.fill();
-}
-
-/* draw ghosts */
-function drawGhost(g,idx){
-  const cx = g.x + TILE/2, cy = g.y + TILE/2;
-  ctx.save();
-  ctx.fillStyle = g.scared ? '#0052FF' : g.color;
-  ctx.beginPath(); ctx.arc(cx,cy-2,7,Math.PI,0,false);
-  ctx.lineTo(cx+7,cy+5); ctx.lineTo(cx+3,cy+8); ctx.lineTo(cx,cy+5); ctx.lineTo(cx-3,cy+8); ctx.lineTo(cx-7,cy+5); ctx.closePath();
+  ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
   ctx.fill();
-  // eyes
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx-3,cy-3,2,0,Math.PI*2); ctx.arc(cx+3,cy-3,2,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle = g.scared ? '#0000FF' : '#000'; ctx.beginPath(); ctx.arc(cx-3,cy-3,1,0,Math.PI*2); ctx.arc(cx+3,cy-3,1,0,Math.PI*2); ctx.fill();
-  ctx.restore();
+  ctx.fillStyle = player.color;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-/* ========= Movement & collision checks ========= */
-function inBoundsGrid(x,y){
-  const gx = Math.floor(x / TILE), gy = Math.floor(y / TILE);
-  if(gx < 0 || gy < 0 || gy >= maze.length || gx >= maze[0].length) return true;
-  return maze[gy][gx] !== 1;
+function movePlayer() {
+  player.x += player.dx;
+  player.y += player.dy;
+  if (player.x < 0) player.x = width;
+  if (player.x > width) player.x = 0;
+  if (player.y < 0) player.y = height;
+  if (player.y > height) player.y = 0;
 }
 
-function canMove(x,y,dir,speed){
-  let nx = x, ny = y;
-  switch(dir){ case 'up': ny -= speed; break; case 'down': ny += speed; break; case 'left': nx -= speed; break; case 'right': nx += speed; break; }
-  const corners = [{x:nx+2,y:ny+2},{x:nx+TILE-2,y:ny+2},{x:nx+2,y:ny+TILE-2},{x:nx+TILE-2,y:ny+TILE-2}];
-  for(const c of corners){
-    const gx = Math.floor(c.x / TILE), gy = Math.floor(c.y / TILE);
-    if(gx < 0 || gy < 0 || gy >= maze.length || gx >= maze[0].length) continue;
-    if(maze[gy][gx] === 1) return false;
-  }
-  return true;
+function gameLoop() {
+  ctx.clearRect(0, 0, width, height);
+  drawMaze();
+  movePlayer();
+  drawPlayer();
+  requestAnimationFrame(gameLoop);
 }
 
-/* ========= Init and reset ========= */
-function resetGame(){
-  resetMap();
-  score = 0; lives = 3; powerMode = false; powerTimer = 0; frame = 0;
-  pac.x = 14*TILE; pac.y = 23*TILE; pac.dir='left'; pac.nextDir='left'; pac.mouth=0; pac.mouthDir=1;
-  ghosts = [
-    {x:13*TILE,y:11*TILE,dir:'left',speed:1.6,color:'#ff6b6b',alive:true,scared:false,respawn:0},
-    {x:14*TILE,y:11*TILE,dir:'up',speed:1.6,color:'#9affb8',alive:true,scared:false,respawn:0},
-    {x:15*TILE,y:11*TILE,dir:'right',speed:1.6,color:'#6fdfff',alive:true,scared:false,respawn:0},
-    {x:13*TILE,y:14*TILE,dir:'left',speed:1.6,color:'#ffcf66',alive:true,scared:false,respawn:0}
-  ];
-  hudScore.textContent = score; hudLives.textContent = lives; hudHigh.textContent = high;
-  document.getElementById('powerVal').textContent = 0;
-}
-
-/* ========= Ghost movement (smoothed AI) ========= */
-function updateGhosts(){
-  ghosts.forEach((g,idx)=>{
-    if(!g.alive){
-      if(g.respawn>0) g.respawn--;
-      else { g.alive = true; g.x = (13 + (idx%2))*TILE; g.y = (idx===3?14:11)*TILE; }
-      return;
-    }
-    // choose direction randomly occasionally or if blocked
-    if(Math.random() < 0.02 || !canMove(g.x,g.y,g.dir,g.speed)){
-      const dirs = ['up','down','left','right'];
-      const valids = dirs.filter(d=>canMove(g.x,g.y,d,g.speed));
-      if(valids.length) g.dir = valids[Math.floor(Math.random()*valids.length)];
-    }
-    // move (slower when scared)
-    const sp = (powerMode ? g.speed * 0.5 : g.speed);
-    switch(g.dir){ case 'up': g.y -= sp; break; case 'down': g.y += sp; break; case 'left': g.x -= sp; break; case 'right': g.x += sp; break; }
-    // wrap
-    if(g.x < -TILE) g.x = VW; else if(g.x > VW) g.x = -TILE;
-  });
-}
-
-/* ========= Collisions & pickups ========= */
-function checkCollisions(){
-  // dots
-  for(let i=dots.length-1;i>=0;i--){
-    const dot = dots[i];
-    if(d(dot.x+TILE/2,dot.y+TILE/2,pac.x+TILE/2,pac.y+TILE/2) < 10){
-      dots.splice(i,1); score += 10; hudScore.textContent = score;
-    }
-  }
-  // power pellets
-  for(let i=powerPellets.length-1;i>=0;i--){
-    const p = powerPellets[i];
-    if(d(p.x+TILE/2,p.y+TILE/2,pac.x+TILE/2,pac.y+TILE/2) < 12){
-      powerPellets.splice(i,1); score += 50; hudScore.textContent = score;
-      powerMode = true; powerTimer = POWER_FRAMES;
-      ghosts.forEach(g => { if(g.alive) g.scared = true; });
-    }
-  }
-  // ghosts collisions
-  ghosts.forEach(g=>{
-    if(!g.alive) return;
-    const distG = d(g.x+TILE/2,g.y+TILE/2,pac.x+TILE/2,pac.y+TILE/2);
-    if(frame < 40) return; // safe start short buffer
-    if(distG < 14){
-      if(g.scared){
-        g.alive = false; g.respawn = 120 + Math.floor(Math.random()*60); score += 200; hudScore.textContent = score;
-      } else {
-        // pacman dies
-        lives--; hudLives.textContent = lives;
-        if(lives <= 0) endGame();
-        else {
-          pac.x = 14*TILE; pac.y = 23*TILE; pac.dir='left'; pac.nextDir='left';
-        }
-      }
-    }
-  });
-}
-
-/* ========= Input ========= */
-const keys = {};
-window.addEventListener('keydown', (e)=>{ keys[e.key] = true; });
-window.addEventListener('keyup', (e)=>{ keys[e.key] = false; });
-document.querySelectorAll('.dBtn').forEach(btn=>{
-  btn.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); handleDpad(btn.dataset.dir); });
-  btn.addEventListener('mousedown', ()=> handleDpad(btn.dataset.dir));
+document.getElementById("startBtn").addEventListener("click", () => {
+  document.getElementById("startBtn").style.display = "none";
+  gameStarted = true;
+  generateMaze();
+  gameLoop();
 });
-function handleDpad(d){
-  if(d==='up') pac.nextDir='up';
-  if(d==='down') pac.nextDir='down';
-  if(d==='left') pac.nextDir='left';
-  if(d==='right') pac.nextDir='right';
-}
 
-/* ========= Pac movement update ========= */
-function updatePac(){
-  // mouth animation
-  pac.mouth += 0.12 * pac.mouthDir; if(pac.mouth >= 1 || pac.mouth <= 0) pac.mouthDir *= -1;
-  // try change direction
-  if(canMove(pac.x,pac.y,pac.nextDir,pac.speed)) pac.dir = pac.nextDir;
-  if(canMove(pac.x,pac.y,pac.dir,pac.speed)){
-    switch(pac.dir){ case 'up': pac.y -= pac.speed; break; case 'down': pac.y += pac.speed; break; case 'left': pac.x -= pac.speed; break; case 'right': pac.x += pac.speed; break; }
-  }
-  // tunnel wrap
-  if(pac.x < -TILE) pac.x = VW;
-  else if(pac.x > VW) pac.x = -TILE;
-}
-
-/* ========= Game loop ========= */
-function drawScene(){
-  frame++;
-  // background
-  drawCircuitBG(frame);
-  // draw maze walls, dots, pellets
-  walls.forEach(w=>drawWall(w.x,w.y));
-  dots.forEach(d=>drawDot(d.x,d.y));
-  for(let i=0;i<powerPellets.length;i++) drawPower(powerPellets[i].x,powerPellets[i].y,frame + i*7);
-
-  updatePac();
-  updateGhosts();
-  checkCollisions();
-
-  // draw pac & ghosts on top
-  drawPac(pac.x,pac.y);
-  ghosts.forEach((g,i)=> drawGhost(g,i));
-
-  // power mode timer
-  if(powerMode){
-    powerTimer--; hudPower.textContent = Math.ceil(powerTimer/6);
-    if(powerTimer <= 0){ powerMode = false; ghosts.forEach(g=>g.scared = false); hudPower.textContent = 0; }
-  }
-
-  animId = requestAnimationFrame(drawScene);
-}
-
-/* ========= Start / End ========= */
-function startGame(){
-  // fade start panel then initialize
-  const startPanel = document.getElementById('startPanel'); startPanel.style.transition='opacity .9s'; startPanel.style.opacity=0;
-  setTimeout(()=>{ startPanel.style.display='none'; }, 900);
-  // prepare map, reset state
-  resetGame();
-  // show watermark softly
-  setTimeout(()=>{ const w = document.getElementById('wordmark'); if(w) w.style.opacity=0.22; }, 400);
-  // small safe spawn delay handled by frame<40 in collision
-  if(animId) cancelAnimationFrame(animId);
-  animId = requestAnimationFrame(drawScene);
-}
-
-/* ========= End game ========= */
-function endGame(){
-  cancelAnimationFrame(animId);
-  // update highscore
-  if(score > high){ high = score; localStorage.setItem('basemanHigh', high); hudHigh.textContent = high; }
-  // show overlay and reset panel
-  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,VW,VH);
-  ctx.fillStyle = '#fff'; ctx.font='28px Inter'; ctx.textAlign='center'; ctx.fillText('GAME OVER', VW/2, VH/2 - 10);
-  // show start panel again
-  setTimeout(()=>{ const sp = document.getElementById('startPanel'); sp.style.display='flex'; sp.style.opacity=1; }, 1200);
-}
-
-/* ========= Utility: orientation + controls visibility ========= */
-function isMobile(){ return window.innerWidth <= 767; }
-function refreshControls(){ document.getElementById('controls').style.display = isMobile() ? 'block' : 'none'; }
-function checkOrientation(){ const overlay = document.getElementById('rotateOverlay'); if(isMobile() && window.innerHeight > window.innerWidth) overlay.classList.add('visible'); else overlay.classList.remove('visible'); }
-refreshControls(); checkOrientation();
-
-/* ========= Preview before start (render static scene) ========= */
-function preview(){
-  fitCanvas(); resetMap();
-  // small preview player/ghosts
-  pac.x = 14*TILE; pac.y = 23*TILE;
-  createPreviewGhosts();
-  frame = 0;
-  drawCircuitBG(0);
-  walls.forEach(w=>drawWall(w.x,w.y));
-  dots.forEach(d=>drawDot(d.x,d.y));
-  powerPellets.forEach((p,i)=>drawPower(p.x,p.y,0));
-  drawPac(pac.x,pac.y);
-  ghosts.forEach((g,i)=> drawGhost(g,i));
-}
-function createPreviewGhosts(){
-  ghosts = [];
-  for(let i=0;i<4;i++){
-    ghosts.push({x: VW/2 + (i-1.5)*30, y: VH/2 - 40, vx:0, vy:0, speed:1.6, color: ['#ff6b6b','#9affb8','#6fdfff','#ffcf66'][i], alive:true, scared:false, trail:[], trailLen:6});
+function keyDown(e) {
+  switch(e.key) {
+    case "ArrowRight":
+    case "d": player.dx = player.speed; player.dy = 0; break;
+    case "ArrowLeft":
+    case "a": player.dx = -player.speed; player.dy = 0; break;
+    case "ArrowUp":
+    case "w": player.dy = -player.speed; player.dx = 0; break;
+    case "ArrowDown":
+    case "s": player.dy = player.speed; player.dx = 0; break;
   }
 }
-preview();
+function keyUp(e) {
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"].includes(e.key)) {
+    player.dx = 0; player.dy = 0;
+  }
+}
+document.addEventListener("keydown", keyDown);
+document.addEventListener("keyup", keyUp);
 
-/* ========= Events ========= */
-document.getElementById('startBtn').addEventListener('click', startGame);
-window.addEventListener('load', ()=>{ fitCanvas(); checkOrientation(); refreshControls(); });
+// Mobile detection
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const controls = document.getElementById("mobile-controls");
+if (isMobile) controls.style.display = "flex";
+
+// D-pad controls
+const press = (dir) => {
+  switch(dir) {
+    case "up": player.dy = -player.speed; player.dx = 0; break;
+    case "down": player.dy = player.speed; player.dx = 0; break;
+    case "left": player.dx = -player.speed; player.dy = 0; break;
+    case "right": player.dx = player.speed; player.dy = 0; break;
+  }
+};
+["up","down","left","right"].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener("touchstart", () => press(id));
+  el.addEventListener("touchend", () => { player.dx = 0; player.dy = 0; });
+});
 </script>
 </body>
 </html>
