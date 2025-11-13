@@ -5,64 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BlueMan Maze</title>
   <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
     body {
       margin: 0;
-      background: radial-gradient(circle at center, #001628, #000814);
+      background: radial-gradient(circle at center, #001020, #000814);
+      overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
       height: 100vh;
-      overflow: hidden;
+      font-family: Arial, sans-serif;
     }
-
     canvas {
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
       background: #001020;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+      display: none;
     }
-
-    /* === MOBILE D-PAD === */
-    .dpad {
+    #startBtn {
+      background: linear-gradient(90deg, #00ffff, #0077ff);
+      border: none;
+      color: white;
+      font-size: 22px;
+      padding: 12px 26px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ffff;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #startBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 18px #00ffff;
+    }
+    #dpad {
       position: fixed;
-      bottom: 30px;
-      left: 30px;
+      bottom: 40px;
+      left: 40px;
       width: 160px;
       height: 160px;
-      display: none; /* Hidden on desktop */
+      display: none;
       opacity: 0.7;
       z-index: 10;
-      touch-action: manipulation;
     }
-
-    .dpad button {
+    #dpad button {
       position: absolute;
       width: 60px;
       height: 60px;
-      background: rgba(0, 255, 255, 0.15);
-      border: 1px solid rgba(0, 255, 255, 0.4);
-      border-radius: 10px;
+      background: rgba(0, 255, 255, 0.1);
+      border: 1px solid rgba(0, 255, 255, 0.5);
+      border-radius: 12px;
       color: #0ff;
       font-size: 22px;
       font-weight: bold;
       backdrop-filter: blur(6px);
+      touch-action: manipulation;
     }
-
-    .up { top: 0; left: 50px; }
-    .down { bottom: 0; left: 50px; }
-    .left { left: 0; top: 50px; }
-    .right { right: 0; top: 50px; }
-
-    .dpad button:active {
-      background: rgba(0, 255, 255, 0.35);
-    }
+    #dpad .up { top: 0; left: 50px; }
+    #dpad .down { bottom: 0; left: 50px; }
+    #dpad .left { top: 50px; left: 0; }
+    #dpad .right { top: 50px; right: 0; }
+    #dpad button:active { background: rgba(0, 255, 255, 0.35); }
   </style>
 </head>
-
 <body>
+  <button id="startBtn">Start Game</button>
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-  <!-- D-Pad for Mobile -->
-  <div class="dpad" id="dpad">
+  <!-- D-Pad (hidden on desktop) -->
+  <div id="dpad">
     <button class="up">▲</button>
     <button class="down">▼</button>
     <button class="left">◀</button>
@@ -72,25 +88,25 @@
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-
-    const tileSize = 30;
+    const startBtn = document.getElementById("startBtn");
+    const dpad = document.getElementById("dpad");
+    const tileSize = 25;
     const cols = Math.floor(canvas.width / tileSize);
     const rows = Math.floor(canvas.height / tileSize);
 
-    const maze = [];
-    for (let y = 0; y < rows; y++) {
-      maze[y] = [];
-      for (let x = 0; x < cols; x++) {
-        maze[y][x] = Math.random() < 0.3 ? 1 : 0; // 1 = wall, 0 = path
-      }
-    }
+    let maze = [];
+    let player = { x: 1, y: 1, color: "#00ffff", size: tileSize * 0.6 };
 
-    const player = {
-      x: 1,
-      y: 1,
-      size: tileSize * 0.6,
-      color: "#00ffff",
-    };
+    function generateMaze() {
+      maze = [];
+      for (let y = 0; y < rows; y++) {
+        maze[y] = [];
+        for (let x = 0; x < cols; x++) {
+          maze[y][x] = Math.random() < 0.22 ? 1 : 0;
+        }
+      }
+      maze[1][1] = 0;
+    }
 
     function drawMaze() {
       for (let y = 0; y < rows; y++) {
@@ -99,8 +115,6 @@
             ctx.fillStyle = "#002b80";
             ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
           }
-          ctx.strokeStyle = "#003050";
-          ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
         }
       }
     }
@@ -143,46 +157,43 @@
       draw();
     }
 
+    // Controls
     document.addEventListener("keydown", (e) => {
       switch (e.key) {
-        case "ArrowUp":
-          move(0, -1);
-          break;
-        case "ArrowDown":
-          move(0, 1);
-          break;
-        case "ArrowLeft":
-          move(-1, 0);
-          break;
-        case "ArrowRight":
-          move(1, 0);
-          break;
+        case "ArrowUp": move(0, -1); break;
+        case "ArrowDown": move(0, 1); break;
+        case "ArrowLeft": move(-1, 0); break;
+        case "ArrowRight": move(1, 0); break;
       }
     });
 
-    // D-Pad controls
-    const dpad = document.getElementById("dpad");
-    const buttons = dpad.querySelectorAll("button");
-    buttons.forEach((btn) => {
-      btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (btn.classList.contains("up")) move(0, -1);
-        if (btn.classList.contains("down")) move(0, 1);
-        if (btn.classList.contains("left")) move(-1, 0);
-        if (btn.classList.contains("right")) move(1, 0);
+    function setupDpad() {
+      const buttons = dpad.querySelectorAll("button");
+      buttons.forEach((btn) => {
+        btn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          if (btn.classList.contains("up")) move(0, -1);
+          if (btn.classList.contains("down")) move(0, 1);
+          if (btn.classList.contains("left")) move(-1, 0);
+          if (btn.classList.contains("right")) move(1, 0);
+        });
       });
-    });
+    }
 
-    // Auto-detect mobile
     function isMobile() {
       return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
 
-    if (isMobile()) {
-      dpad.style.display = "block";
-    }
-
-    draw();
+    startBtn.addEventListener("click", () => {
+      startBtn.style.display = "none";
+      canvas.style.display = "block";
+      generateMaze();
+      draw();
+      if (isMobile()) {
+        dpad.style.display = "block";
+        setupDpad();
+      }
+    });
   </script>
 </body>
 </html>
