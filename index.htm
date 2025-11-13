@@ -44,7 +44,7 @@
       background: linear-gradient(145deg, #0066ff, #002aff);
     }
 
-    /* D-Pad */
+    /* D-Pad (hidden by default) */
     #mobile-controls {
       position: fixed;
       bottom: 40px;
@@ -55,7 +55,6 @@
       display: none;
       justify-content: center;
       align-items: center;
-      gap: 10px;
       flex-wrap: wrap;
       z-index: 10;
     }
@@ -95,6 +94,8 @@
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const controls = document.getElementById("mobile-controls");
 
     let width, height;
     function resizeCanvas() {
@@ -104,7 +105,6 @@
       canvas.height = height;
     }
     resizeCanvas();
-
     window.addEventListener("resize", resizeCanvas);
 
     const player = {
@@ -133,7 +133,7 @@
       maze.forEach(block => {
         ctx.fillRect(block.x, block.y, cellSize - 2, cellSize - 2);
       });
-      ctx.strokeStyle = "rgba(0,255,255,0.3)";
+      ctx.strokeStyle = "rgba(0,255,255,0.2)";
       for (let x = 0; x < width; x += cellSize) {
         for (let y = 0; y < height; y += cellSize) {
           ctx.strokeRect(x, y, cellSize, cellSize);
@@ -160,7 +160,7 @@
       player.x += player.dx;
       player.y += player.dy;
 
-      // Wall collisions
+      // Collisions
       maze.forEach(block => {
         if (
           player.x + player.size > block.x &&
@@ -168,13 +168,11 @@
           player.y + player.size > block.y &&
           player.y - player.size < block.y + cellSize
         ) {
-          // Bounce back
           player.x -= player.dx;
           player.y -= player.dy;
         }
       });
 
-      // Screen wrap
       if (player.x < 0) player.x = width;
       if (player.x > width) player.x = 0;
       if (player.y < 0) player.y = height;
@@ -189,45 +187,42 @@
       requestAnimationFrame(update);
     }
 
-    // Controls
-    function keyDown(e) {
+    // Keyboard controls
+    document.addEventListener("keydown", e => {
       if (e.key === "ArrowUp" || e.key === "w") { player.dy = -player.speed; player.dx = 0; }
       else if (e.key === "ArrowDown" || e.key === "s") { player.dy = player.speed; player.dx = 0; }
       else if (e.key === "ArrowLeft" || e.key === "a") { player.dx = -player.speed; player.dy = 0; }
       else if (e.key === "ArrowRight" || e.key === "d") { player.dx = player.speed; player.dy = 0; }
-    }
+    });
 
-    function keyUp(e) {
+    document.addEventListener("keyup", e => {
       if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"].includes(e.key)) {
         player.dx = 0;
         player.dy = 0;
       }
-    }
-
-    document.addEventListener("keydown", keyDown);
-    document.addEventListener("keyup", keyUp);
-
-    // Mobile controls
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) document.getElementById("mobile-controls").style.display = "flex";
-
-    const dirs = ["up","down","left","right"];
-    dirs.forEach(id => {
-      const el = document.getElementById(id);
-      el.addEventListener("touchstart", () => {
-        switch(id) {
-          case "up": player.dy = -player.speed; player.dx = 0; break;
-          case "down": player.dy = player.speed; player.dx = 0; break;
-          case "left": player.dx = -player.speed; player.dy = 0; break;
-          case "right": player.dx = player.speed; player.dy = 0; break;
-        }
-      });
-      el.addEventListener("touchend", () => { player.dx = 0; player.dy = 0; });
     });
 
-    // Start button
-    document.getElementById("startBtn").addEventListener("click", () => {
-      document.getElementById("startBtn").style.display = "none";
+    // Detect mobile and show D-pad only when needed
+    const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
+
+    if (isMobile) {
+      controls.style.display = "flex";
+      ["up","down","left","right"].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener("touchstart", () => {
+          switch(id) {
+            case "up": player.dy = -player.speed; player.dx = 0; break;
+            case "down": player.dy = player.speed; player.dx = 0; break;
+            case "left": player.dx = -player.speed; player.dy = 0; break;
+            case "right": player.dx = player.speed; player.dy = 0; break;
+          }
+        });
+        el.addEventListener("touchend", () => { player.dx = 0; player.dy = 0; });
+      });
+    }
+
+    startBtn.addEventListener("click", () => {
+      startBtn.style.display = "none";
       generateMaze();
       update();
     });
